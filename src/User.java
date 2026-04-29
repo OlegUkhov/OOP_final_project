@@ -41,7 +41,6 @@ public abstract class User implements Observable {
     public void update(ResearchPaper paper){
 
     }
-    //мунда геттерлер сеттерлер жазу кажет
     public String getId(){
         return id;
     }

@@ -1,6 +1,6 @@
 import java.util.Objects;
 
-public abstract class User {
+public abstract class User implements Observable {
     protected String id;
     protected String firstName;
     protected String lastName;

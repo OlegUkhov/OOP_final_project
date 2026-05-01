@@ -1,6 +1,6 @@
 import java.util.Objects;
 
-public abstract class User implements Observable {
+public abstract class User implements Observer {
     protected String id;
     protected String firstName;
     protected String lastName;
@@ -43,5 +43,20 @@ public abstract class User implements Observable {
     }
     public String getId(){
         return id;
+    }
+    public String getFirstName(){
+        return firstName;
+    }
+    public String getLastName(){
+        return lastName;
+    }
+    public String getEmail(){
+        return email;
+    }
+    public String getPassword(){
+        return password;
+    }
+    public Language getLanguage(){
+        return language;
     }
 }

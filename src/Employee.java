@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Employee extends User {
@@ -14,7 +15,9 @@ public abstract class Employee extends User {
         this.department = department;
     }
     public void sendMessage(){}
-    public List<Request> viewRequests(){}
+    public List<Request> viewRequests(){
+        return new ArrayList<>();
+    }
     public String getEmployeeId(){
         return employeeId;
     }

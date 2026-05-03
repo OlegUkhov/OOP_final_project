@@ -1,3 +1,5 @@
+import java.util.Objects;
+
 public class Lesson {
     private String lessonId;
     private String topic;
@@ -7,6 +9,14 @@ public class Lesson {
         this.lessonId = lessonId;
         this.topic = topic;
         this.lessonType = lessonType;
+    }
+
+    public String getLessonId() {
+        return lessonId;
+    }
+
+    public String getTopic() {
+        return topic;
     }
 
     public LessonType getLessonType() {
@@ -21,5 +31,17 @@ public class Lesson {
                 ", lessonType=" + lessonType +
                 '}';
     }
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Lesson)) return false;
+        Lesson lesson = (Lesson) o;
+        return Objects.equals(lessonId, lesson.lessonId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lessonId);
+    }
+}

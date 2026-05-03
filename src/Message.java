@@ -25,6 +25,14 @@ public class Message {
         return content;
     }
 
+    public Employee getReceiver() {
+        return receiver;
+    }
+
+    public Employee getSender() {
+        return sender;
+    }
+
     @Override
     public String toString() {
         return "Message{from=" + (sender != null ? sender.getFirstName() + " " + sender.getLastName() : "null")

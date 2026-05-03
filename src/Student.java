@@ -7,8 +7,8 @@ public class Student extends User {
 
     private String studentId;
     protected double gpa;
-    private int credits;       // total credits currently registered; enforced against 21 limit
-    private int failCount;     // incremented externally when a course is failed; capped at 3
+    private int credits;
+    protected int failCount;
     private List<Course> courses;
     private List<Mark> marks;
     private List<StudentOrganization> organizations;
@@ -25,13 +25,13 @@ public class Student extends User {
         this.organizations = new ArrayList<>();
     }
 
-    // Checks credit limit before adding the course; throws CourseOverloadException if exceeded
-    // Manager.approveRegistration() calls this after its own pre-check
+    // Checks credit limit before adding course throws CourseOverloadException if exceeded
+    // Manager.approveRegistration calls this after its own pre-check
     public void registerForCourse(Course c) {
         if (c == null || courses.contains(c)) return;
         if (credits + c.getCredits() > 21) {
             throw new CourseOverloadException(
-                "Cannot exceed 21 credits. Current: " + credits + ", course: " + c.getCredits());
+                    "Cannot exceed 21 credits Current " + credits + " course " + c.getCredits());
         }
         courses.add(c);
         credits += c.getCredits();
@@ -41,7 +41,7 @@ public class Student extends User {
         return new ArrayList<>(marks);
     }
 
-    // Builds a plain-text report; called directly in Main and Teacher panel scenarios
+    // Builds plain-text report called directly in Main and Teacher panel scenarios
     public String getTranscript() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== Student Transcript ===\n");
@@ -55,14 +55,14 @@ public class Student extends User {
         return sb.toString();
     }
 
-    // Delegates to Teacher.addRating() which recalculates the running average
+    // Delegates to Teacher.addRating which recalculates the running average
     public void rateTeacher(Teacher t, int rating) {
         if (t != null && rating >= 1 && rating <= 5) {
             t.addRating(rating);
         }
     }
 
-    // Also calls org.addMember(this) so the organization list stays consistent
+    // Also calls org.addMember so the organization list stays consistent
     public void joinOrganization(StudentOrganization org) {
         if (org != null && !organizations.contains(org)) {
             organizations.add(org);
@@ -74,7 +74,11 @@ public class Student extends User {
         return credits;
     }
 
-    // Read by Manager.getStudentsSortedByGpa() comparator
+    public int getFailCount() {
+        return failCount;
+    }
+
+    // Read by Manager.getStudentsSortedByGpa comparator
     public double getGpa() {
         return gpa;
     }
@@ -85,12 +89,12 @@ public class Student extends User {
         }
     }
 
-    // Used in getTranscript()
+    // Used in getTranscript
     public String getStudentId() {
         return studentId;
     }
 
-    // Called by Teacher.putMark() to push the Mark object into the student own list
+    // Called by Teacher.putMark to push Mark object into the student own list
     public void addMark(Mark mark) {
         if (mark != null && !marks.contains(mark)) {
             marks.add(mark);

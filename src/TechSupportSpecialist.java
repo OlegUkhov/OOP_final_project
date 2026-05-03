@@ -11,11 +11,11 @@ public class TechSupportSpecialist extends Employee {
         super(id, firstName, lastName, email, password, language, employeeId, salary, department);
     }
 
-    // Filters the full request list passed in; only returns requests in VIEWED status
-    // In a full system the list would come from DataStorage.getRequests()
-    public List<Request> viewNewRequests(List<Request> allRequests) {
+    // Fetches all requests from DataStorage and returns only those in VIEWED status
+    // DataStorage.getRequests() is the single source of truth for all Request objects
+    public List<Request> viewNewRequests() {
+        List<Request> allRequests = DataStorage.getInstance().getRequests();
         List<Request> result = new ArrayList<>();
-        if (allRequests == null) return result;
         for (Request req : allRequests) {
             if (req.getStatus() == RequestStatus.VIEWED) {
                 result.add(req);

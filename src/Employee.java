@@ -21,7 +21,7 @@ public abstract class Employee extends User {
         this.department = department;
     }
 
-    // Creates a Message object and prints it; any Employee can message any other Employee
+    // Creates a Message object and saves it to DataStorage; any Employee can message any other Employee
     // Message constructor expects two Employee references as sender and receiver
     public void sendMessage(Employee receiver, String text) {
         if (receiver != null && text != null && !text.isEmpty()) {
@@ -32,6 +32,8 @@ public abstract class Employee extends User {
                 text,
                 new Date()
             );
+            // Persist message so it can be retrieved later via DataStorage.getMessages()
+            DataStorage.getInstance().addMessage(msg);
             System.out.println("[MESSAGE] " + msg);
         }
     }

@@ -15,6 +15,10 @@ public class DataStorage {
     private List<Journal> journals;
     private List<Log> logs;
     private List<News> news;
+    // All Request objects submitted by students or employees; read by TechSupportSpecialist.viewNewRequests()
+    private List<Request> requests;
+    // All Message objects sent via Employee.sendMessage(); allows future inbox retrieval
+    private List<Message> messages;
 
     private DataStorage() {
         this.users = new ArrayList<>();
@@ -24,6 +28,8 @@ public class DataStorage {
         this.journals = new ArrayList<>();
         this.logs = new ArrayList<>();
         this.news = new ArrayList<>();
+        this.requests = new ArrayList<>();
+        this.messages = new ArrayList<>();
     }
 
     // Double-check is not needed for a single-threaded demo but synchronized protects correctness
@@ -80,6 +86,49 @@ public class DataStorage {
         if (log != null && !logs.contains(log)) {
             logs.add(log);
         }
+    }
+
+    // Stores a Request in the central list so TechSupportSpecialist.viewNewRequests() can find it
+    public void addRequest(Request request) {
+        if (request != null && !requests.contains(request)) {
+            requests.add(request);
+        }
+    }
+
+    // Called by TechSupportSpecialist.viewNewRequests() to get the full request pool
+    public List<Request> getRequests() {
+        return new ArrayList<>(requests);
+    }
+
+    // Stores a Message so the conversation history is not lost after Employee.sendMessage() returns
+    public void addMessage(Message message) {
+        if (message != null && !messages.contains(message)) {
+            messages.add(message);
+        }
+    }
+
+    // Returns all messages; filter by receiver in the caller if an inbox view is needed
+    public List<Message> getMessages() {
+        return new ArrayList<>(messages);
+    }
+
+    // Replaces an existing User entry matched by id; used by Admin.updateUser()
+    public void updateUser(User user) {
+        if (user == null) return;
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getId().equals(user.getId())) {
+                users.set(i, user);
+                return;
+            }
+        }
+    }
+
+    public List<Log> getLogs() {
+        return new ArrayList<>(logs);
+    }
+
+    public List<News> getNews() {
+        return new ArrayList<>(news);
     }
 
     // Scans users list: PROFESSOR teachers get TeacherResearcher wrapper
@@ -146,6 +195,7 @@ public class DataStorage {
     public String toString() {
         return "DataStorage{users=" + users.size() + ", courses=" + courses.size()
                 + ", papers=" + papers.size() + ", projects=" + projects.size()
-                + ", journals=" + journals.size() + ", news=" + news.size() + "}";
+                + ", journals=" + journals.size() + ", news=" + news.size()
+                + ", requests=" + requests.size() + ", messages=" + messages.size() + "}";
     }
 }

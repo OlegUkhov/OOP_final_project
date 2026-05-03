@@ -9,7 +9,7 @@ public abstract class User implements Observer {
     protected String lastName;
     protected String email;
     protected String password;
-    // Controls which language the UI shows for this user (KZ / EN / RU)
+    // Controls which language the UI shows for this user KZ EN RU
     protected Language language;
 
     public User(String id, String firstName, String lastName,
@@ -22,7 +22,7 @@ public abstract class User implements Observer {
         this.language = language;
     }
 
-    // Entry point for the system; a real version would check credentials against DataStorage
+    // Entry point for the system a real version would check credentials against DataStorage
     public boolean login() {
         return true;
     }
@@ -30,21 +30,21 @@ public abstract class User implements Observer {
     public void logout() {
     }
 
-    // Called by Journal.notifyObservers() when a new paper is published in a subscribed journal
+    // Called by Journal.notifyObservers when a new paper is published in subscribed journal
     @Override
     public void update(ResearchPaper paper) {
         if (paper != null) {
             System.out.println("[NOTIFICATION] " + firstName + " " + lastName
-                    + " notified: new paper - " + paper.getTitle());
+                    + " notified new paper " + paper.getTitle());
         }
     }
 
-    // Used by DataStorage.removeUser() and Admin.removeUser() to match by id
+    // Used by DataStorage.removeUser and Admin.removeUser to match by id
     public String getId() {
         return id;
     }
 
-    // Used by toString() in Message and Complaint to show the person name
+    // Used by toString in Message and Complaint to show the person name
     public String getFirstName() {
         return firstName;
     }
@@ -53,12 +53,23 @@ public abstract class User implements Observer {
         return lastName;
     }
 
+    public Language getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(Language lang) {
+        if (lang != null) {
+            this.language = lang;
+            System.out.println("[LANGUAGE] " + firstName + " " + lastName + " switched to " + lang);
+        }
+    }
+
     @Override
     public String toString() {
         return firstName + " " + lastName + " [id=" + id + ", email=" + email + "]";
     }
 
-    // Equality is id-based so the same person is never stored twice in a collection
+    // Equality is based on id so the same person is never stored twice in collection
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

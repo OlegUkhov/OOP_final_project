@@ -1,32 +1,41 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 public class Journal implements Observable {
+    private String journalId;
     private String name;
     private List<ResearchPaper> papers;
     private List<Observer> subscribers;
     
     public Journal(String name) {
+        this.journalId = UUID.randomUUID().toString();
         this.name = name;
         this.papers = new ArrayList<>();
         this.subscribers = new ArrayList<>();
     }
     
     public void publishPaper(ResearchPaper p) {
-        papers.add(p);
-        notifyObservers(p);
+        if (p != null && !papers.contains(p)) {
+            papers.add(p);
+            // Уведомляем всех подписчиков о новой публикации
+            notifyObservers(p);
+        }
     }
     
     @Override
     public void subscribe(Observer o) {
-        if (!subscribers.contains(o)) {
+        if (o != null && !subscribers.contains(o)) {
             subscribers.add(o);
         }
     }
     
     @Override
     public void unsubscribe(Observer o) {
-        subscribers.remove(o);
+        if (o != null) {
+            subscribers.remove(o);
+        }
     }
     
     @Override
@@ -34,6 +43,10 @@ public class Journal implements Observable {
         for (Observer observer : subscribers) {
             observer.update(paper);
         }
+    }
+    
+    public String getJournalId() {
+        return journalId;
     }
     
     public List<ResearchPaper> getPapers() {
@@ -44,8 +57,30 @@ public class Journal implements Observable {
         return name;
     }
     
+    public int getSubscriberCount() {
+        return subscribers.size();
+    }
+    
     @Override
     public String toString() {
-        return "Journal{" + "name='" + name + '\'' + ", papers=" + papers.size() + '}';
+        return "Journal{" +
+                "journalId='" + journalId + '\'' +
+                ", name='" + name + '\'' +
+                ", papers=" + papers.size() +
+                ", subscribers=" + subscribers.size() +
+                '}';
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Journal)) return false;
+        Journal journal = (Journal) o;
+        return Objects.equals(journalId, journal.journalId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(journalId);
     }
 }

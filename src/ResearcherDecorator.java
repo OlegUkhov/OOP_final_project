@@ -65,7 +65,7 @@ public abstract class ResearcherDecorator implements Researcher {
                 projects.add(rp);
             }
         } catch (NotResearcherException e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error " + e.getMessage());
         }
     }
 
@@ -74,12 +74,12 @@ public abstract class ResearcherDecorator implements Researcher {
     @Override
     public void printPapers(Comparator<ResearchPaper> c) {
         if (papers.isEmpty()) {
-            System.out.println("No papers yet.");
+            System.out.println("No papers yet");
             return;
         }
         List<ResearchPaper> sorted = new ArrayList<>(papers);
         if (c != null) sorted.sort(c);
-        System.out.println("=== Research Papers ===");
+        System.out.println("Research Papers");
         for (ResearchPaper p : sorted) {
             System.out.println(p);
         }

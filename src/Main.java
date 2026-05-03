@@ -220,7 +220,7 @@ public class Main {
         System.out.println(researchNews);
 
         // Tech support
-        // Status flow shown: VIEWED -> ACCEPTED -> DONE
+        // Status flow shown VIEWED -> ACCEPTED -> DONE
         // rejectRequest() would go VIEWED -> REJECTED instead
         System.out.println("\n[16] Tech support");
 
@@ -231,13 +231,13 @@ public class Main {
         storage.addUser(tech);
 
         Request req = new Request("REQ001", "Fix projector in room 101", student);
-        System.out.println("Created: " + req);
+        System.out.println("Created " + req);
 
         tech.acceptRequest(req);
-        System.out.println("After accept: " + req.getStatus());
+        System.out.println("After accept " + req.getStatus());
 
         tech.markAsDone(req);
-        System.out.println("After done: " + req.getStatus());
+        System.out.println("After done " + req.getStatus());
 
         // Messaging
         // Employee.sendMessage() creates a Message object and prints it immediately
@@ -258,12 +258,12 @@ public class Main {
         Researcher top = storage.getTopCitedResearcher();
         if (top instanceof TeacherResearcher) {
             Teacher t = ((TeacherResearcher) top).getTeacher();
-            System.out.println("Top: " + t.getFirstName() + " " + t.getLastName()
+            System.out.println("Top " + t.getFirstName() + " " + t.getLastName()
                 + " (h-index=" + top.calculateHIndex() + ")");
         }
 
         System.out.println("\n" + "=".repeat(65));
-        System.out.println("Final state: " + storage);
+        System.out.println("Final state " + storage);
         System.out.println("Demo completed!");
     }
 }

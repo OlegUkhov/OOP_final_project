@@ -6,7 +6,6 @@ import java.util.List;
 
 public class Manager extends Employee {
 
-    // OR = office registrar; DEPARTMENT = department head
     private ManagerType managerType;
     private List<News> managedNews;
 

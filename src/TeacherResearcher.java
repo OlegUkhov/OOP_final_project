@@ -13,7 +13,7 @@ public class TeacherResearcher extends ResearcherDecorator {
         this.teacher = teacher;
     }
 
-    // Used in Main section 19 to print the name of the top cited researcher
+    // Used in Main section to print the name of the top cited researcher
     public Teacher getTeacher() {
         return teacher;
     }

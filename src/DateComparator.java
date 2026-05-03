@@ -1,4 +1,4 @@
-// Sorts ResearchPaper objects by publication date descending (newest first)
+// Sorts ResearchPaper objects by publication date descending
 // Uses Date.compareTo() from ResearchPaper.getDatePublished()
 import java.util.Comparator;
 

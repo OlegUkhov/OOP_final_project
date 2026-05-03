@@ -1,4 +1,4 @@
-// Sorts ResearchPaper objects by citation count descending (most cited first)
+// Sorts ResearchPaper objects by citation count descending
 // Used with Researcher.printPapers() and DataStorage sorting methods
 import java.util.Comparator;
 

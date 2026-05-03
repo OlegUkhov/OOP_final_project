@@ -1,4 +1,4 @@
-// Concrete decorator: gives a Student the Researcher role
+// Concrete decorator gives a Student the Researcher role
 // Used for GraduateStudent instances and any bachelor assigned to research
 // GraduateStudent.setSupervisor() accepts any Researcher including this type
 public class StudentResearcher extends ResearcherDecorator {

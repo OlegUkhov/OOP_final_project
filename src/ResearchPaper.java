@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.UUID; // AI told me it is a good way to generate unique IDs
 
 public class ResearchPaper {
 
@@ -54,7 +54,7 @@ public class ResearchPaper {
         return "Unknown format";
     }
 
-    // Produces: Author1, Author2 (year). Title. Journal, pp. 1-N.
+    // Produces Author1, Author2 (year). Title. Journal, pp. 1-N.
     private String getPlainTextCitation() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < authors.size(); i++) {

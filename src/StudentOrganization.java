@@ -1,5 +1,5 @@
-// Студенческая организация (кружок, клуб и т.д.).
-// Имеет список участников и одного главу (head), который должен быть участником.
+// A student club or organization with a head and a members list
+// Head must already be in the members list before being assigned
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -7,16 +7,12 @@ import java.util.UUID;
 
 public class StudentOrganization {
 
-    // Уникальный идентификатор организации
     private String organizationId;
-    // Название организации
     private String name;
-    // Глава организации (должен быть в списке участников)
+    // Must be a member of this organization; checked in setHead()
     private Student head;
-    // Список участников организации
     private List<Student> members;
 
-    // Конструктор — создаёт организацию без участников и главы
     public StudentOrganization(String name) {
         this.organizationId = UUID.randomUUID().toString();
         this.name = name;
@@ -24,41 +20,38 @@ public class StudentOrganization {
         this.members = new ArrayList<>();
     }
 
-    // Добавить студента в организацию
+    // Called by Student.joinOrganization() to keep both sides in sync
     public void addMember(Student student) {
         if (student != null && !members.contains(student)) {
             members.add(student);
         }
     }
 
-    // Удалить студента из организации; если это был head — сбросить head
+    // If the removed student was the head the head reference is cleared
     public void removeMember(Student student) {
         if (student == null) return;
         members.remove(student);
-        // Если удалённый студент был главой — обнуляем главу
         if (head != null && head.equals(student)) {
             head = null;
         }
     }
 
-    // Назначить главу организации (должен уже быть участником)
+    // Guard: student must already be in members to become head
     public void setHead(Student student) {
         if (student != null && members.contains(student)) {
             this.head = student;
         }
     }
 
-    // Получить список участников организации
     public List<Student> getMembers() {
         return new ArrayList<>(members);
     }
 
-    // Получить главу организации — нужен для отображения в demo
+    // Read in Main to print the head name after the organization is created
     public Student getHead() {
         return head;
     }
 
-    // Строковое представление организации
     @Override
     public String toString() {
         return "StudentOrganization{name='" + name + "', head="
@@ -66,7 +59,6 @@ public class StudentOrganization {
                 + ", members=" + members.size() + "}";
     }
 
-    // Две организации равны, если совпадают их organizationId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -75,7 +67,6 @@ public class StudentOrganization {
         return Objects.equals(organizationId, that.organizationId);
     }
 
-    // Хэш-код по organizationId
     @Override
     public int hashCode() {
         return Objects.hash(organizationId);

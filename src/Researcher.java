@@ -1,23 +1,24 @@
-// Интерфейс исследователя (паттерн Decorator).
-// Реализуется классами TeacherResearcher и StudentResearcher через ResearcherDecorator.
-// Определяет основные операции с научными публикациями и проектами.
+// Researcher role interface - implemented via Decorator pattern
+// TeacherResearcher and StudentResearcher both implement this through ResearcherDecorator
+// GraduateStudent.setSupervisor() requires a Researcher reference with h-index >= 3
 import java.util.Comparator;
 import java.util.List;
 
 public interface Researcher {
 
-    // Опубликовать научную статью
+    // Adds the paper to the internal papers list in ResearcherDecorator
     void publishPaper(ResearchPaper p);
 
-    // Вычислить h-index исследователя
+    // Calculates h-index from the papers list; algorithm lives in ResearcherDecorator
     int calculateHIndex();
 
-    // Возглавить исследовательский проект
+    // Adds this researcher as a participant in the project via ResearchProject.addParticipant()
     void leadProject(ResearchProject rp);
 
-    // Напечатать список статей, отсортированный компаратором
+    // Sorts the papers list using the given comparator and prints each paper
+    // Comparators available: CitationComparator DateComparator LengthComparator
     void printPapers(Comparator<ResearchPaper> c);
 
-    // Получить список всех статей исследователя
+    // Returns a copy of the internal papers list
     List<ResearchPaper> getPapers();
 }

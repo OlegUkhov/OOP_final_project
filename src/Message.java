@@ -1,22 +1,17 @@
-// Сообщение между сотрудниками университета.
-// Хранит отправителя, получателя, текст и дату.
+// An internal message between two Employee objects
+// Created and printed by Employee.sendMessage(); not stored in DataStorage in this version
 import java.util.Date;
 import java.util.Objects;
 
 public class Message {
 
-    // Уникальный идентификатор сообщения
     private String messageId;
-    // Отправитель сообщения
+    // Set to the calling Employee in Employee.sendMessage()
     private Employee sender;
-    // Получатель сообщения
     private Employee receiver;
-    // Текст сообщения
     private String content;
-    // Дата отправки
     private Date date;
 
-    // Конструктор — инициализирует все поля сообщения
     public Message(String messageId, Employee sender, Employee receiver,
                    String content, Date date) {
         this.messageId = messageId;
@@ -26,12 +21,10 @@ public class Message {
         this.date = date;
     }
 
-    // Получить текст сообщения (указано в диаграмме явно)
     public String getContent() {
         return content;
     }
 
-    // Строковое представление сообщения
     @Override
     public String toString() {
         return "Message{from=" + (sender != null ? sender.getFirstName() + " " + sender.getLastName() : "null")
@@ -39,7 +32,6 @@ public class Message {
                 + ", content='" + content + "', date=" + date + "}";
     }
 
-    // Два сообщения равны, если совпадают их messageId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -48,7 +40,6 @@ public class Message {
         return Objects.equals(messageId, m.messageId);
     }
 
-    // Хэш-код по messageId
     @Override
     public int hashCode() {
         return Objects.hash(messageId);

@@ -1,6 +1,5 @@
-// Класс преподавателя университета.
-// Управляет курсами, выставляет оценки, отправляет жалобы на студентов.
-// Имеет должность (TeacherPosition) и рейтинг, выставляемый студентами.
+// University teacher; manages courses marks and complaints
+// Can be wrapped by TeacherResearcher to gain Researcher capabilities
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -8,16 +7,13 @@ import java.util.UUID;
 
 public class Teacher extends Employee {
 
-    // Должность преподавателя (TUTOR, LECTOR, SENIOR_LECTOR, PROFESSOR)
+    // TUTOR LECTOR SENIOR_LECTOR PROFESSOR - used by DataStorage.getAllResearchers()
+    // to decide if the teacher is automatically a researcher
     private TeacherPosition position;
-    // Список курсов, которые ведёт преподаватель
     private List<Course> courses;
-    // Текущий средний рейтинг преподавателя
     private double rating;
-    // Количество оценок — нужно для корректного расчёта среднего
-    private int ratingCount;
+    private int ratingCount; // needed to calculate running average in addRating()
 
-    // Конструктор — инициализирует преподавателя с нулевым рейтингом
     public Teacher(String id, String firstName, String lastName, String email,
                    String password, Language language, String employeeId,
                    double salary, String department, TeacherPosition position) {
@@ -28,62 +24,55 @@ public class Teacher extends Employee {
         this.ratingCount = 0;
     }
 
-    // Получить список курсов преподавателя
     public List<Course> viewCourses() {
         return new ArrayList<>(courses);
     }
 
-    // Добавить курс в список преподавателя и зарегистрировать себя в курсе
+    // Registers this teacher inside the Course object as well to keep both sides in sync
     public void manageCourse(Course c) {
         if (c != null && !courses.contains(c)) {
             courses.add(c);
-            // Регистрируем преподавателя в курсе
             c.addTeacher(this);
         }
     }
 
-    // Выставить оценку студенту по курсу (только если курс ведёт этот преподаватель)
+    // Pushes the Mark into student via Student.addMark()
+    // Guard checks that this teacher actually owns the course
     public void putMark(Student s, Course c, Mark mark) {
         if (s != null && mark != null && courses.contains(c)) {
-            // Добавляем оценку в список оценок студента
             s.addMark(mark);
         }
     }
 
-    // Отправить жалобу на студента декану с указанием срочности
+    // Returns a Complaint object; caller (dean or manager) is responsible for storing it
     public Complaint sendComplaint(Student s, String text, ComplaintUrgency urgency) {
         if (s == null || text == null || text.isEmpty()) return null;
-        // Создаём объект жалобы и возвращаем его (хранение — на стороне получателя)
         return new Complaint(UUID.randomUUID().toString(), s, text, urgency, new Date());
     }
 
-    // Просмотреть информацию о студентах своих курсов
     public void viewStudentsInfo() {
         for (Course c : courses) {
             System.out.println("Course: " + c);
         }
     }
 
-    // Обновить рейтинг преподавателя — вызывается из Student.rateTeacher()
+    // Called from Student.rateTeacher(); updates running average without storing all individual scores
     public void addRating(int rating) {
         if (rating >= 1 && rating <= 5) {
-            // Вычисляем новое среднее значение рейтинга
             this.rating = (this.rating * ratingCount + rating) / (ratingCount + 1);
             this.ratingCount++;
         }
     }
 
-    // Получить текущий рейтинг преподавателя — нужен для отображения в demo
     public double getRating() {
         return rating;
     }
 
-    // Получить должность преподавателя (указано в диаграмме явно)
+    // Read by DataStorage.getAllResearchers() to auto-include professors in the researcher list
     public TeacherPosition getPosition() {
         return position;
     }
 
-    // Строковое представление преподавателя
     @Override
     public String toString() {
         return "Teacher{id='" + id + "', name='" + firstName + " " + lastName

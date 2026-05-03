@@ -1,24 +1,21 @@
-// Конкретный декоратор: студент (выпускник) в роли исследователя.
-// Оборачивает Student (обычно GraduateStudent), добавляя возможности Researcher.
-// PhD- и магистранты всегда являются исследователями.
+// Concrete decorator: gives a Student the Researcher role
+// Used for GraduateStudent instances and any bachelor assigned to research
+// GraduateStudent.setSupervisor() accepts any Researcher including this type
 public class StudentResearcher extends ResearcherDecorator {
 
-    // Ссылка на оборачиваемого студента
+    // Reference to the wrapped student; needed to display name in toString and supervisor checks
     private Student student;
 
-    // Конструктор — принимает студента, которому присваивается роль исследователя
+    // Passes null to super because Student itself does not implement Researcher
     public StudentResearcher(Student student) {
-        // Передаём null: Student сам по себе не Researcher, декоратор работает автономно
         super(null);
         this.student = student;
     }
 
-    // Получить оборачиваемого студента — нужен для отображения имени
     public Student getStudent() {
         return student;
     }
 
-    // Строковое представление студента-исследователя
     @Override
     public String toString() {
         return "StudentResearcher{name='" + (student != null ? student.getFirstName() + " " + student.getLastName() : "null")

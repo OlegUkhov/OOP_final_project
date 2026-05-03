@@ -1,30 +1,21 @@
-// Единственное хранилище данных системы (паттерн Singleton).
-// Содержит все сущности: пользователей, курсы, статьи, проекты, журналы, логи, новости.
-// Доступ только через getInstance() — прямое создание запрещено.
+// Single data store for the whole system (Singleton pattern)
+// All collections live here; access through getInstance() only
+// saveData() and loadData() are stubs for Part C serialization
 import java.util.ArrayList;
 import java.util.List;
 
 public class DataStorage {
 
-    // Единственный экземпляр класса (Singleton)
     private static DataStorage instance;
 
-    // Список всех пользователей системы
     private List<User> users;
-    // Список всех курсов
     private List<Course> courses;
-    // Список всех научных статей
     private List<ResearchPaper> papers;
-    // Список всех исследовательских проектов
     private List<ResearchProject> projects;
-    // Список всех журналов
     private List<Journal> journals;
-    // Список системных логов
     private List<Log> logs;
-    // Список новостей
     private List<News> news;
 
-    // Приватный конструктор — запрещает создание экземпляра извне
     private DataStorage() {
         this.users = new ArrayList<>();
         this.courses = new ArrayList<>();
@@ -35,91 +26,82 @@ public class DataStorage {
         this.news = new ArrayList<>();
     }
 
-    // Получить единственный экземпляр DataStorage (потокобезопасно)
+    // Double-check is not needed for a single-threaded demo but synchronized protects correctness
     public static synchronized DataStorage getInstance() {
         if (instance == null) {
-            // Создаём экземпляр только при первом обращении
             instance = new DataStorage();
         }
         return instance;
     }
 
-    // Добавить пользователя в систему
     public void addUser(User user) {
         if (user != null && !users.contains(user)) {
             users.add(user);
         }
     }
 
-    // Удалить пользователя из системы по его id
     public void removeUser(String userId) {
         if (userId != null) {
             users.removeIf(u -> u.getId().equals(userId));
         }
     }
 
-    // Добавить курс в систему
     public void addCourse(Course course) {
         if (course != null && !courses.contains(course)) {
             courses.add(course);
         }
     }
 
-    // Добавить научную статью в систему
     public void addPaper(ResearchPaper paper) {
         if (paper != null && !papers.contains(paper)) {
             papers.add(paper);
         }
     }
 
-    // Добавить исследовательский проект
     public void addProject(ResearchProject project) {
         if (project != null && !projects.contains(project)) {
             projects.add(project);
         }
     }
 
-    // Добавить журнал в систему
     public void addJournal(Journal journal) {
         if (journal != null && !journals.contains(journal)) {
             journals.add(journal);
         }
     }
 
-    // Добавить новость в систему
     public void addNews(News n) {
         if (n != null && !news.contains(n)) {
             news.add(n);
         }
     }
 
-    // Добавить запись лога
     public void addLog(Log log) {
         if (log != null && !logs.contains(log)) {
             logs.add(log);
         }
     }
 
-    // Получить всех исследователей системы (профессора + выпускники)
+    // Scans users list: PROFESSOR teachers get TeacherResearcher wrapper
+    // GraduateStudent instances get StudentResearcher wrapper
+    // Returns fresh wrapper objects every call so h-index reflects current paper counts
     public List<Researcher> getAllResearchers() {
         List<Researcher> researchers = new ArrayList<>();
         for (User u : users) {
-            // Профессор автоматически считается исследователем
             if (u instanceof Teacher) {
                 Teacher t = (Teacher) u;
                 if (t.getPosition() == TeacherPosition.PROFESSOR) {
                     researchers.add(new TeacherResearcher(t));
                 }
-            }
-            // Выпускник (магистр/PhD) автоматически считается исследователем
-            else if (u instanceof GraduateStudent) {
+            } else if (u instanceof GraduateStudent) {
                 researchers.add(new StudentResearcher((Student) u));
             }
         }
         return researchers;
     }
 
-    // Найти исследователя с наибольшим h-index (топ-цитируемый)
+    // Iterates all researchers and picks the one with the highest calculateHIndex() value
+    // TeacherResearcher.calculateHIndex() delegates to ResearcherDecorator
     public Researcher getTopCitedResearcher() {
         List<Researcher> researchers = getAllResearchers();
         if (researchers.isEmpty()) return null;
@@ -127,7 +109,6 @@ public class DataStorage {
         Researcher top = researchers.get(0);
         int maxH = top.calculateHIndex();
 
-        // Перебираем всех исследователей, ищем максимальный h-index
         for (Researcher r : researchers) {
             int h = r.calculateHIndex();
             if (h > maxH) {
@@ -138,33 +119,29 @@ public class DataStorage {
         return top;
     }
 
-    // Получить список всех пользователей
     public List<User> getUsers() {
         return new ArrayList<>(users);
     }
 
-    // Получить список всех курсов
     public List<Course> getCourses() {
         return new ArrayList<>(courses);
     }
 
-    // Получить список всех журналов
     public List<Journal> getJournals() {
         return new ArrayList<>(journals);
     }
 
-    // Сохранить данные (заглушка — в учебной версии вывод в консоль)
+    // Part C replace with ObjectOutputStream to a file
     public void saveData() {
         System.out.println("[DataStorage] Saving... (" + users.size() + " users, "
                 + courses.size() + " courses, " + papers.size() + " papers)");
     }
 
-    // Загрузить данные (заглушка)
+    // Part C replace with ObjectInputStream from a file
     public void loadData() {
         System.out.println("[DataStorage] Loading data...");
     }
 
-    // Строковое представление хранилища
     @Override
     public String toString() {
         return "DataStorage{users=" + users.size() + ", courses=" + courses.size()

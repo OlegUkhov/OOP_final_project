@@ -1,6 +1,6 @@
-// Научная статья — центральная сущность исследовательской системы.
-// Содержит метаданные (авторы, журнал, цитирования, страницы, дата, DOI)
-// и умеет генерировать ссылку в формате Plain Text или BibTeX.
+// A published research article; central entity in the research subsystem
+// Holds metadata used by comparators and h-index calculation
+// getCitation() produces formatted references in PLAIN_TEXT or BIBTEX
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -9,24 +9,19 @@ import java.util.UUID;
 
 public class ResearchPaper {
 
-    // Уникальный идентификатор статьи
     private String paperId;
-    // Название статьи
     private String title;
-    // Список авторов
     private List<String> authors;
-    // Название журнала, в котором опубликована статья
     private String journal;
-    // Количество цитирований
+    // Read by CitationComparator and ResearcherDecorator.calculateHIndex()
     private int citations;
-    // Количество страниц
+    // Read by LengthComparator
     private int pages;
-    // Дата публикации
+    // Read by DateComparator
     private Date datePublished;
-    // Цифровой идентификатор объекта (DOI)
     private String doi;
 
-    // Конструктор — генерирует уникальный id и DOI автоматически
+    // DOI is auto-generated from the first 8 chars of the UUID
     public ResearchPaper(String title, String journal, int pages, Date datePublished) {
         this.paperId = UUID.randomUUID().toString();
         this.title = title;
@@ -35,23 +30,21 @@ public class ResearchPaper {
         this.citations = 0;
         this.pages = pages;
         this.datePublished = datePublished;
-        // DOI генерируется на основе первых 8 символов уникального id
         this.doi = "10.1234/" + paperId.substring(0, 8);
     }
 
-    // Добавить автора статьи (нужен для заполнения списка авторов извне)
     public void addAuthor(String author) {
         if (author != null && !author.isEmpty() && !authors.contains(author)) {
             authors.add(author);
         }
     }
 
-    // Увеличить счётчик цитирований на 1 (нужен для имитации цитирований в demo)
+    // Used in Main demo to simulate citation accumulation
     public void addCitation() {
         this.citations++;
     }
 
-    // Получить строку-ссылку в формате Plain Text или BibTeX
+    // Routes to the correct private method based on CitationFormat enum value
     public String getCitation(CitationFormat format) {
         if (format == CitationFormat.PLAIN_TEXT) {
             return getPlainTextCitation();
@@ -61,10 +54,9 @@ public class ResearchPaper {
         return "Unknown format";
     }
 
-    // Сформировать ссылку в формате Plain Text
+    // Produces: Author1, Author2 (year). Title. Journal, pp. 1-N.
     private String getPlainTextCitation() {
         StringBuilder sb = new StringBuilder();
-        // Перечисляем авторов через запятую
         for (int i = 0; i < authors.size(); i++) {
             sb.append(authors.get(i));
             if (i < authors.size() - 1) sb.append(", ");
@@ -75,13 +67,12 @@ public class ResearchPaper {
         return sb.toString();
     }
 
-    // Сформировать ссылку в формате BibTeX
+    // Produces a standard BibTeX article entry; authors joined with " and "
     private String getBibtexCitation() {
         StringBuilder sb = new StringBuilder();
         sb.append("@article{").append(paperId.substring(0, 8)).append(",\n");
         sb.append("  title={").append(title).append("},\n");
         sb.append("  author={");
-        // Авторы перечисляются через " and "
         for (int i = 0; i < authors.size(); i++) {
             sb.append(authors.get(i));
             if (i < authors.size() - 1) sb.append(" and ");
@@ -95,34 +86,32 @@ public class ResearchPaper {
         return sb.toString();
     }
 
-    // Получить год публикации из даты
     private int getYear() {
         java.util.Calendar cal = java.util.Calendar.getInstance();
         cal.setTime(datePublished);
         return cal.get(java.util.Calendar.YEAR);
     }
 
-    // Геттер количества цитирований — нужен для h-index и компараторов
+    // Read by ResearcherDecorator.calculateHIndex() and CitationComparator
     public int getCitations() {
         return citations;
     }
 
-    // Геттер количества страниц — нужен для LengthComparator
+    // Read by LengthComparator
     public int getPages() {
         return pages;
     }
 
-    // Геттер даты публикации — нужен для DateComparator
+    // Read by DateComparator
     public Date getDatePublished() {
         return datePublished;
     }
 
-    // Геттер названия — нужен для отображения уведомлений (User.update)
+    // Read by User.update() to print the notification message
     public String getTitle() {
         return title;
     }
 
-    // Строковое представление статьи
     @Override
     public String toString() {
         return "ResearchPaper{title='" + title + "', journal='" + journal
@@ -130,7 +119,6 @@ public class ResearchPaper {
                 + ", year=" + getYear() + "}";
     }
 
-    // Две статьи равны, если совпадают их paperId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -139,7 +127,6 @@ public class ResearchPaper {
         return Objects.equals(paperId, p.paperId);
     }
 
-    // Хэш-код по paperId
     @Override
     public int hashCode() {
         return Objects.hash(paperId);

@@ -1,44 +1,38 @@
-// Запрос в техподдержку (например, починить проектор).
-// Начальный статус — VIEWED. Специалист меняет его на ACCEPTED/REJECTED/DONE.
+// A tech support request; status flows from VIEWED to ACCEPTED or REJECTED then to DONE
+// Created with VIEWED status; TechSupportSpecialist drives all further transitions
 import java.util.Date;
 import java.util.Objects;
 
 public class Request {
 
-    // Уникальный идентификатор запроса
     private String requestId;
-    // Описание проблемы
     private String description;
-    // Текущий статус запроса
+    // Starts as VIEWED; transitions enforced in TechSupportSpecialist methods
     private RequestStatus status;
-    // Пользователь, создавший запрос (студент или сотрудник)
+    // Any User can submit a request (Student or Employee)
     private User createdBy;
-    // Дата создания запроса
     private Date date;
 
-    // Конструктор — новый запрос всегда получает статус VIEWED
     public Request(String requestId, String description, User createdBy) {
         this.requestId = requestId;
         this.description = description;
         this.createdBy = createdBy;
-        // Начальный статус: запрос просмотрен (но ещё не принят)
         this.status = RequestStatus.VIEWED;
         this.date = new Date();
     }
 
-    // Получить текущий статус запроса (указано в диаграмме явно)
+    // Read by TechSupportSpecialist.viewNewRequests() acceptRequest() rejectRequest() markAsDone()
     public RequestStatus getStatus() {
         return status;
     }
 
-    // Установить новый статус запроса (указано в диаграмме явно)
+    // Called by TechSupportSpecialist methods to advance the status
     public void setStatus(RequestStatus status) {
         if (status != null) {
             this.status = status;
         }
     }
 
-    // Строковое представление запроса
     @Override
     public String toString() {
         return "Request{id='" + requestId + "', desc='" + description
@@ -47,7 +41,6 @@ public class Request {
                 + "}";
     }
 
-    // Два запроса равны, если совпадают их requestId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -56,7 +49,6 @@ public class Request {
         return Objects.equals(requestId, r.requestId);
     }
 
-    // Хэш-код по requestId
     @Override
     public int hashCode() {
         return Objects.hash(requestId);

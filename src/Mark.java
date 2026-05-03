@@ -1,25 +1,20 @@
-// Оценка студента по курсу.
-// Состоит из трёх компонентов: 1-я аттестация, 2-я аттестация, финальный экзамен.
-// Умеет вычислять итоговый балл и букварную оценку (A–F).
+// Grade record linking a Student to a Course
+// Three components: first attestation second attestation final exam
+// getTotalScore() averages them; getLetterGrade() maps the average to A-F scale
 import java.util.Objects;
 import java.util.UUID;
 
 public class Mark {
 
-    // Уникальный идентификатор оценки
     private String markId;
-    // Балл за первую аттестацию
     private double firstAttestation;
-    // Балл за вторую аттестацию
     private double secondAttestation;
-    // Балл за финальный экзамен
     private double finalExam;
-    // Студент, которому выставлена оценка
+    // Link to Student so the mark can display who it belongs to in toString()
     private Student student;
-    // Курс, по которому выставлена оценка
+    // Link to Course so the mark can display which course it covers in toString()
     private Course course;
 
-    // Конструктор — автоматически генерирует id оценки
     public Mark(double firstAttestation, double secondAttestation, double finalExam,
                 Student student, Course course) {
         this.markId = UUID.randomUUID().toString();
@@ -30,15 +25,14 @@ public class Mark {
         this.course = course;
     }
 
-    // Вычислить среднее арифметическое трёх компонентов
+    // Simple arithmetic mean of all three scores
     public double getTotalScore() {
         return (firstAttestation + secondAttestation + finalExam) / 3.0;
     }
 
-    // Перевести итоговый балл в буквенную оценку по шкале A–F
+    // Threshold boundaries follow a standard 100-point university scale
     public String getLetterGrade() {
         double score = getTotalScore();
-        // Шкала оценок университета
         if (score >= 94.5) return "A";
         if (score >= 89.5) return "A-";
         if (score >= 84.5) return "B+";
@@ -52,7 +46,6 @@ public class Mark {
         return "F";
     }
 
-    // Строковое представление оценки
     @Override
     public String toString() {
         return "Mark{student=" + (student != null ? student.getFirstName() : "null")
@@ -61,7 +54,6 @@ public class Mark {
                 + ", grade=" + getLetterGrade() + "}";
     }
 
-    // Две оценки равны, если совпадают их markId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -70,7 +62,6 @@ public class Mark {
         return Objects.equals(markId, m.markId);
     }
 
-    // Хэш-код по markId
     @Override
     public int hashCode() {
         return Objects.hash(markId);

@@ -1,24 +1,23 @@
-// Конкретный декоратор: преподаватель в роли исследователя.
-// Оборачивает Teacher, добавляя ему возможности Researcher.
-// Используется для профессоров и других преподавателей-исследователей.
+// Concrete decorator gives a Teacher the Researcher role
+// Used for professors and any teacher assigned to research
+// DataStorage.getAllResearchers() creates these automatically for PROFESSOR position teachers
 public class TeacherResearcher extends ResearcherDecorator {
 
-    // Ссылка на оборачиваемого преподавателя
+    // Reference to the wrapped teacher; used by DataStorage.getTopCitedResearcher() to retrieve name
     private Teacher teacher;
 
-    // Конструктор — принимает преподавателя, которому присваивается роль исследователя
+    // Passes null to super because Teacher itself does not implement Researcher
+    // All researcher logic is handled by ResearcherDecorator
     public TeacherResearcher(Teacher teacher) {
-        // Передаём null: Teacher сам по себе не Researcher, декоратор работает автономно
         super(null);
         this.teacher = teacher;
     }
 
-    // Получить оборачиваемого преподавателя — нужен для отображения имени в DataStorage
+    // Used in Main section 19 to print the name of the top cited researcher
     public Teacher getTeacher() {
         return teacher;
     }
 
-    // Строковое представление преподавателя-исследователя
     @Override
     public String toString() {
         return "TeacherResearcher{name='" + (teacher != null ? teacher.getFirstName() + " " + teacher.getLastName() : "null")

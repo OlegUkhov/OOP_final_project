@@ -1,8 +1,12 @@
+// A log entry recording a user action with timestamp
+// Created by Admin.logAction() and stored in the Admin logs list
 import java.util.Date;
 import java.util.Objects;
 
 public class Log {
+
     private String logId;
+    // The id of the User who triggered this action; matches User.id
     private String userId;
     private String action;
     private Date timestamp;
@@ -32,12 +36,8 @@ public class Log {
 
     @Override
     public String toString() {
-        return "Log{" +
-                "logId='" + logId + '\'' +
-                ", userId='" + userId + '\'' +
-                ", action='" + action + '\'' +
-                ", timestamp=" + timestamp +
-                '}';
+        return "Log{logId='" + logId + "', userId='" + userId
+                + "', action='" + action + "', timestamp=" + timestamp + "}";
     }
 
     @Override

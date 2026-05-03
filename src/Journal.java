@@ -1,6 +1,5 @@
-// Университетский научный журнал (паттерн Observer).
-// Пользователи могут подписаться/отписаться. При публикации новой статьи
-// все подписчики автоматически получают уведомление (notifyObservers).
+// University research journal implementing the Observable interface (Observer pattern)
+// Any User can subscribe; when publishPaper() is called all subscribers receive an update()
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,16 +7,12 @@ import java.util.UUID;
 
 public class Journal implements Observable {
 
-    // Уникальный идентификатор журнала
     private String journalId;
-    // Название журнала
     private String name;
-    // Список опубликованных статей
     private List<ResearchPaper> papers;
-    // Список подписчиков-наблюдателей
+    // All entries here implement Observer; User already implements Observer
     private List<Observer> subscribers;
 
-    // Конструктор — создаёт пустой журнал с уникальным id
     public Journal(String name) {
         this.journalId = UUID.randomUUID().toString();
         this.name = name;
@@ -25,16 +20,14 @@ public class Journal implements Observable {
         this.subscribers = new ArrayList<>();
     }
 
-    // Опубликовать статью и уведомить всех подписчиков
+    // Adding the paper triggers notifyObservers() which calls update() on every subscriber
     public void publishPaper(ResearchPaper p) {
         if (p != null && !papers.contains(p)) {
             papers.add(p);
-            // Рассылаем уведомления всем подписчикам
             notifyObservers(p);
         }
     }
 
-    // Подписать наблюдателя на журнал
     @Override
     public void subscribe(Observer o) {
         if (o != null && !subscribers.contains(o)) {
@@ -42,7 +35,6 @@ public class Journal implements Observable {
         }
     }
 
-    // Отписать наблюдателя от журнала
     @Override
     public void unsubscribe(Observer o) {
         if (o != null) {
@@ -50,7 +42,7 @@ public class Journal implements Observable {
         }
     }
 
-    // Уведомить всех подписчиков о новой статье
+    // Iterates subscribers and calls User.update(paper) on each one
     @Override
     public void notifyObservers(ResearchPaper paper) {
         for (Observer obs : subscribers) {
@@ -58,24 +50,21 @@ public class Journal implements Observable {
         }
     }
 
-    // Получить список статей журнала
     public List<ResearchPaper> getPapers() {
         return new ArrayList<>(papers);
     }
 
-    // Получить название журнала — нужно для отображения в demo
+    // Used in Main to display journal name when subscribing
     public String getName() {
         return name;
     }
 
-    // Строковое представление журнала
     @Override
     public String toString() {
         return "Journal{name='" + name + "', papers=" + papers.size()
                 + ", subscribers=" + subscribers.size() + "}";
     }
 
-    // Два журнала равны, если совпадают их journalId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -84,7 +73,6 @@ public class Journal implements Observable {
         return Objects.equals(journalId, j.journalId);
     }
 
-    // Хэш-код по journalId
     @Override
     public int hashCode() {
         return Objects.hash(journalId);

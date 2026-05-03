@@ -1,6 +1,5 @@
-// Новость университета.
-// Новости с темой «Research» закрепляются (pin) автоматически менеджером.
-// Поддерживает добавление комментариев.
+// A university news item; supports comments and a pinned flag
+// Manager.manageNews() automatically pins items whose topic is "Research"
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -9,22 +8,15 @@ import java.util.UUID;
 
 public class News {
 
-    // Уникальный идентификатор новости
     private String newsId;
-    // Заголовок новости
     private String title;
-    // Основной текст новости
     private String content;
-    // Тема новости (например, «Research»)
+    // Checked in Manager.manageNews() to decide if auto-pin applies
     private String topic;
-    // Флаг закреплённости новости
     private boolean isPinned;
-    // Дата создания новости
     private Date date;
-    // Список комментариев к новости
     private List<String> comments;
 
-    // Конструктор — создаёт незакреплённую новость с текущей датой
     public News(String title, String content, String topic) {
         this.newsId = UUID.randomUUID().toString();
         this.title = title;
@@ -35,41 +27,36 @@ public class News {
         this.comments = new ArrayList<>();
     }
 
-    // Добавить комментарий к новости
     public void addComment(String comment) {
         if (comment != null && !comment.isEmpty()) {
             comments.add(comment);
         }
     }
 
-    // Закрепить новость (pin)
+    // Sets isPinned to true; called by Manager.manageNews() for Research topic news
     public void pin() {
         this.isPinned = true;
     }
 
-    // Получить тему новости — нужно для проверки в Manager.manageNews()
+    // Read by Manager.manageNews() to check if this news should be auto-pinned
     public String getTopic() {
         return topic;
     }
 
-    // Получить флаг закреплённости — нужен для отображения в demo
     public boolean isPinned() {
         return isPinned;
     }
 
-    // Получить список комментариев
     public List<String> getComments() {
         return new ArrayList<>(comments);
     }
 
-    // Строковое представление новости
     @Override
     public String toString() {
         return "News{title='" + title + "', topic='" + topic
                 + "', pinned=" + isPinned + ", comments=" + comments.size() + "}";
     }
 
-    // Две новости равны, если совпадают их newsId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -78,7 +65,6 @@ public class News {
         return Objects.equals(newsId, n.newsId);
     }
 
-    // Хэш-код по newsId
     @Override
     public int hashCode() {
         return Objects.hash(newsId);

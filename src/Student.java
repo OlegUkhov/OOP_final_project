@@ -1,27 +1,18 @@
-// Класс студента-бакалавра.
-// Может регистрироваться на курсы (максимум 21 кредит), просматривать оценки,
-// получать транскрипт, оценивать преподавателей и вступать в организации.
+// Bachelor-level student
+// Can register for courses up to 21 credits and fail at most 3 times
 import java.util.ArrayList;
 import java.util.List;
 
 public class Student extends User {
 
-    // Студенческий номер
     private String studentId;
-    // Средний балл (GPA)
     protected double gpa;
-    // Суммарное количество кредитов, набранных студентом
-    private int credits;
-    // Количество провалов курсов (не более 3)
-    private int failCount;
-    // Список курсов, на которые записан студент
+    private int credits;       // total credits currently registered; enforced against 21 limit
+    private int failCount;     // incremented externally when a course is failed; capped at 3
     private List<Course> courses;
-    // Список оценок студента
     private List<Mark> marks;
-    // Список студенческих организаций, в которых состоит студент
     private List<StudentOrganization> organizations;
 
-    // Конструктор — инициализирует студента с начальными нулевыми значениями
     public Student(String id, String firstName, String lastName, String email,
                    String password, Language language, String studentId) {
         super(id, firstName, lastName, email, password, language);
@@ -34,10 +25,10 @@ public class Student extends User {
         this.organizations = new ArrayList<>();
     }
 
-    // Записаться на курс — проверяет лимит в 21 кредит
+    // Checks credit limit before adding the course; throws CourseOverloadException if exceeded
+    // Manager.approveRegistration() calls this after its own pre-check
     public void registerForCourse(Course c) {
         if (c == null || courses.contains(c)) return;
-        // Проверка: суммарные кредиты не должны превышать 21
         if (credits + c.getCredits() > 21) {
             throw new CourseOverloadException(
                 "Cannot exceed 21 credits. Current: " + credits + ", course: " + c.getCredits());
@@ -46,74 +37,66 @@ public class Student extends User {
         credits += c.getCredits();
     }
 
-    // Получить список всех оценок студента
     public List<Mark> viewMarks() {
         return new ArrayList<>(marks);
     }
 
-    // Сформировать и вернуть транскрипт студента в виде строки
+    // Builds a plain-text report; called directly in Main and Teacher panel scenarios
     public String getTranscript() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== Student Transcript ===\n");
-        // Выводим идентификационные данные
         sb.append("ID: ").append(studentId).append("\n");
         sb.append("Name: ").append(firstName).append(" ").append(lastName).append("\n");
         sb.append("GPA: ").append(String.format("%.2f", gpa)).append("\n");
         sb.append("Credits: ").append(credits).append("/21\n");
-        // Перечисляем все оценки
         for (Mark mark : marks) {
             sb.append("  ").append(mark).append("\n");
         }
         return sb.toString();
     }
 
-    // Поставить оценку преподавателю (от 1 до 5)
+    // Delegates to Teacher.addRating() which recalculates the running average
     public void rateTeacher(Teacher t, int rating) {
         if (t != null && rating >= 1 && rating <= 5) {
-            // Делегируем обновление рейтинга преподавателю
             t.addRating(rating);
         }
     }
 
-    // Вступить в студенческую организацию
+    // Also calls org.addMember(this) so the organization list stays consistent
     public void joinOrganization(StudentOrganization org) {
         if (org != null && !organizations.contains(org)) {
             organizations.add(org);
-            // Добавляем себя в список участников организации
             org.addMember(this);
         }
     }
 
-    // Получить суммарное количество кредитов студента
     public int getTotalCredits() {
         return credits;
     }
 
-    // Геттер GPA — нужен для сортировки студентов по успеваемости в Manager
+    // Read by Manager.getStudentsSortedByGpa() comparator
     public double getGpa() {
         return gpa;
     }
 
-    // Сеттер GPA — нужен для установки значения снаружи класса
     public void setGpa(double gpa) {
         if (gpa >= 0.0 && gpa <= 4.0) {
             this.gpa = gpa;
         }
     }
 
-    // Геттер studentId — нужен для отображения в транскрипте
+    // Used in getTranscript()
     public String getStudentId() {
         return studentId;
     }
 
-    // Добавить оценку в список — нужен для Teacher.putMark()
+    // Called by Teacher.putMark() to push the Mark object into the student own list
     public void addMark(Mark mark) {
         if (mark != null && !marks.contains(mark)) {
             marks.add(mark);
         }
     }
 
-    // Строковое представление студента
     @Override
     public String toString() {
         return "Student{id='" + id + "', name='" + firstName + " " + lastName

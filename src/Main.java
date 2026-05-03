@@ -10,13 +10,13 @@ public class Main {
         System.out.println("  University Research System - Demo");
         System.out.println("=".repeat(65));
 
-        // ── 1. DataStorage (Singleton) ──────────────────────────────────
+        // DataStorage Singleton
         // getInstance() creates the single instance on first call; all sections share it
         System.out.println("\n[1] DataStorage (Singleton)");
         DataStorage storage = DataStorage.getInstance();
         System.out.println(storage);
 
-        // ── 2. Creating users ────────────────────────────────────────────
+        // Creating users
         System.out.println("\n[2] Creating users");
 
         Admin admin = new Admin(
@@ -51,7 +51,7 @@ public class Main {
         storage.addUser(student);
         System.out.println("Student: " + student);
 
-        // GraduateStudent extends Student; used in sections 9 and 12
+        // GraduateStudent extends Student
         GraduateStudent graduate = new GraduateStudent(
             "STU002", "Emma", "Davis", "emma@uni.edu", "pass",
             Language.EN, "STU002"
@@ -60,7 +60,7 @@ public class Main {
         storage.addUser(graduate);
         System.out.println("Graduate: " + graduate);
 
-        // ── 3. Courses ─────────────────────────────────────────────────────
+        // Courses
         // Manager.assignCourse() calls Teacher.manageCourse() which also calls Course.addTeacher()
         System.out.println("\n[3] Creating courses");
 
@@ -76,7 +76,7 @@ public class Main {
         javaCourse.addLesson(new Lesson("L02", "Patterns", LessonType.PRACTICE));
         System.out.println("Java course: " + javaCourse);
 
-        // ── 4. Student registration ──────────────────────────────────────
+        // Student registration
         // approveRegistration() pre-checks credits then calls Student.registerForCourse()
         // CourseOverloadException is thrown if total would exceed 21
         System.out.println("\n[4] Student registration");
@@ -88,7 +88,7 @@ public class Main {
             System.err.println("Overload: " + e.getMessage());
         }
 
-        // ── 5. Grading ────────────────────────────────────────────────────
+        // Grading
         // Teacher.putMark() pushes the Mark object into student via Student.addMark()
         System.out.println("\n[5] Grading");
 
@@ -102,7 +102,7 @@ public class Main {
             System.out.println(m);
         }
 
-        // ── 6. Rating teacher ─────────────────────────────────────────────
+        // Rating teacher
         // Student.rateTeacher() delegates to Teacher.addRating() which keeps a running average
         System.out.println("\n[6] Rating teacher");
         student.rateTeacher(professor, 5);
@@ -110,14 +110,14 @@ public class Main {
         student.rateTeacher(professor, 4);
         System.out.println("Professor rating: " + String.format("%.2f", professor.getRating()));
 
-        // ── 7. Complaint ──────────────────────────────────────────────────
+        // Complaint
         // Teacher.sendComplaint() creates and returns a Complaint object
         System.out.println("\n[7] Complaint");
         Complaint complaint = professor.sendComplaint(student,
             "Late to class repeatedly", ComplaintUrgency.MEDIUM);
         System.out.println(complaint);
 
-        // ── 8. Researcher (Decorator pattern) ─────────────────────────────
+        // Researcher Decorator pattern
         // TeacherResearcher wraps professor; all paper and h-index logic is in ResearcherDecorator
         System.out.println("\n[8] Researcher (Decorator)");
 
@@ -147,7 +147,7 @@ public class Main {
 
         System.out.println("h-index: " + resProf.calculateHIndex());
 
-        // ── 9. Supervisor for graduate student ────────────────────────────
+        // Supervisor for graduate student
         // GraduateStudent.setSupervisor() calls researcher.calculateHIndex()
         // LowHIndexException is thrown if h-index < 3
         System.out.println("\n[9] Assigning supervisor");
@@ -164,18 +164,18 @@ public class Main {
         graduate.publishDiplomaPaper(diploma);
         System.out.println("Diploma papers: " + graduate.getDiplomaPapers().size());
 
-        // ── 10. Sorted paper printing ─────────────────────────────────────
+        // Sorted paper printing
         // printPapers() uses ResearcherDecorator logic with the passed Comparator
         System.out.println("\n[10] Papers sorted by citations");
         resProf.printPapers(new CitationComparator());
 
-        // ── 11. Citation formats ──────────────────────────────────────────
+        // Citation formats
         // getCitation() routes to private methods based on CitationFormat enum
         System.out.println("\n[11] Citation formats");
         System.out.println(paper1.getCitation(CitationFormat.PLAIN_TEXT));
         System.out.println(paper2.getCitation(CitationFormat.BIBTEX));
 
-        // ── 12. Journal and Observer pattern ─────────────────────────────
+        // Journal and Observer pattern
         // journal.subscribe() stores the User as Observer
         // publishPaper() calls notifyObservers() which calls User.update() on each subscriber
         System.out.println("\n[12] Journal (Observer Pattern)");
@@ -191,7 +191,7 @@ public class Main {
         journalPaper.addAuthor("Research Team");
         journal.publishPaper(journalPaper);
 
-        // ── 13. Research project ─────────────────────────────────────────
+        // Research project
         // resProf.leadProject() calls ResearchProject.addParticipant(this)
         System.out.println("\n[13] Research project");
         ResearchProject project = new ResearchProject("AI in Education");
@@ -200,7 +200,7 @@ public class Main {
         storage.addProject(project);
         System.out.println(project);
 
-        // ── 14. Student organization ─────────────────────────────────────
+        // Student organization
         // Student.joinOrganization() also calls org.addMember(this) internally
         System.out.println("\n[14] Student organization");
         StudentOrganization org = new StudentOrganization("CS Club");
@@ -210,7 +210,7 @@ public class Main {
         System.out.println(org);
         System.out.println("Head: " + org.getHead().getFirstName() + " " + org.getHead().getLastName());
 
-        // ── 15. News ──────────────────────────────────────────────────────
+        // News
         // Manager.manageNews() auto-pins news with topic "Research" via News.pin()
         System.out.println("\n[15] News");
         News researchNews = new News("New AI Lab", "University opens AI lab", "Research");
@@ -219,7 +219,7 @@ public class Main {
         researchNews.addComment("Great initiative!");
         System.out.println(researchNews);
 
-        // ── 16. Tech support ──────────────────────────────────────────────
+        // Tech support
         // Status flow shown: VIEWED -> ACCEPTED -> DONE
         // rejectRequest() would go VIEWED -> REJECTED instead
         System.out.println("\n[16] Tech support");
@@ -239,19 +239,19 @@ public class Main {
         tech.markAsDone(req);
         System.out.println("After done: " + req.getStatus());
 
-        // ── 17. Messaging ─────────────────────────────────────────────────
+        // Messaging
         // Employee.sendMessage() creates a Message object and prints it immediately
         System.out.println("\n[17] Messaging");
         professor.sendMessage(manager, "Can we schedule extra labs?");
 
-        // ── 18. Reports and transcript ────────────────────────────────────
+        // Reports and transcript
         // createStatisticalReport() is a simple string builder; can be extended in Part C
         // getTranscript() iterates student.marks and formats each Mark via Mark.toString()
         System.out.println("\n[18] Reports");
         System.out.println(manager.createStatisticalReport());
         System.out.println(student.getTranscript());
 
-        // ── 19. Top cited researcher ──────────────────────────────────────
+        // Top cited researcher
         // DataStorage.getTopCitedResearcher() wraps users on the fly and compares h-index values
         // Casts to TeacherResearcher to call getTeacher() for display
         System.out.println("\n[19] Top cited researcher");

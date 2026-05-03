@@ -39,7 +39,10 @@ public abstract class User implements Observer {
     }
     @Override
     public void update(ResearchPaper paper){
-
+        if (paper != null) {
+            System.out.println("[NOTIFICATION] " + this.firstName + " " + this.lastName +
+                    " has been notified about new paper: " + paper.getTitle());
+        }
     }
     public String getId(){
         return id;

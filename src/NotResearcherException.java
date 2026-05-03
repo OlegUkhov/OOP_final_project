@@ -1,4 +1,4 @@
-public class NotResearcherException extends Exception {
+public class NotResearcherException extends RuntimeException {
     public NotResearcherException(String message) {
         super(message);
     }

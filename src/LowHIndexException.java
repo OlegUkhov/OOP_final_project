@@ -1,4 +1,4 @@
-public class LowHIndexException extends Exception {
+public class LowHIndexException extends RuntimeException {
     public LowHIndexException(String message) {
         super(message);
     }

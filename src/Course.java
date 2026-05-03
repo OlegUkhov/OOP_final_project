@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Course {
     private String courseId;
@@ -19,13 +20,13 @@ public class Course {
     }
 
     public void addTeacher(Teacher t) {
-        if (!teachers.contains(t)) {
+        if (t != null && !teachers.contains(t)) {
             teachers.add(t);
         }
     }
 
     public void addLesson(Lesson l) {
-        if (!lessons.contains(l)) {
+        if (l != null && !lessons.contains(l)) {
             lessons.add(l);
         }
     }
@@ -34,8 +35,24 @@ public class Course {
         return new ArrayList<>(lessons);
     }
 
+    public List<Teacher> getTeachers() {
+        return new ArrayList<>(teachers);
+    }
+
     public int getCredits() {
         return credits;
+    }
+
+    public String getCourseId() {
+        return courseId;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public CourseType getCourseType() {
+        return courseType;
     }
 
     @Override
@@ -45,10 +62,21 @@ public class Course {
                 ", name='" + name + '\'' +
                 ", credits=" + credits +
                 ", courseType=" + courseType +
+                ", teachers=" + teachers.size() +
+                ", lessons=" + lessons.size() +
                 '}';
     }
 
-    public String getName(){
-        return name;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Course)) return false;
+        Course course = (Course) o;
+        return Objects.equals(courseId, course.courseId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(courseId);
     }
 }

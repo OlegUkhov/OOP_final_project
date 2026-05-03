@@ -1,14 +1,23 @@
+// Исследовательский проект.
+// Имеет тему, список участников (только Researcher) и список опубликованных статей.
+// При попытке добавить не-исследователя бросается NotResearcherException.
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 public class ResearchProject {
+
+    // Уникальный идентификатор проекта
     private String projectId;
+    // Тема исследовательского проекта
     private String topic;
+    // Список участников-исследователей
     private List<Researcher> participants;
+    // Список статей, опубликованных в рамках проекта
     private List<ResearchPaper> papers;
 
+    // Конструктор — создаёт проект по теме, генерирует id
     public ResearchProject(String topic) {
         this.projectId = UUID.randomUUID().toString();
         this.topic = topic;
@@ -16,9 +25,10 @@ public class ResearchProject {
         this.papers = new ArrayList<>();
     }
 
-    // Добавить участника проекта (должен быть Researcher)
+    // Добавить участника-исследователя в проект
     public void addParticipant(Researcher researcher) throws NotResearcherException {
         if (researcher == null) {
+            // Нельзя добавить null — это нарушение контракта исследователя
             throw new NotResearcherException("Participant cannot be null");
         }
         if (!participants.contains(researcher)) {
@@ -33,47 +43,36 @@ public class ResearchProject {
         }
     }
 
-    // Добавить опубликованную статью в проект
+    // Добавить статью в список публикаций проекта
     public void addPaper(ResearchPaper paper) {
         if (paper != null && !papers.contains(paper)) {
             papers.add(paper);
         }
     }
 
-    public String getProjectId() {
-        return projectId;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
+    // Получить список участников проекта
     public List<Researcher> getParticipants() {
         return new ArrayList<>(participants);
     }
 
-    public List<ResearchPaper> getPapers() {
-        return new ArrayList<>(papers);
-    }
-
+    // Строковое представление проекта
     @Override
     public String toString() {
-        return "ResearchProject{" +
-                "projectId='" + projectId + '\'' +
-                ", topic='" + topic + '\'' +
-                ", participants=" + participants.size() +
-                ", papers=" + papers.size() +
-                '}';
+        return "ResearchProject{id='" + projectId + "', topic='" + topic
+                + "', participants=" + participants.size()
+                + ", papers=" + papers.size() + "}";
     }
 
+    // Два проекта равны, если совпадают их projectId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ResearchProject)) return false;
-        ResearchProject project = (ResearchProject) o;
-        return Objects.equals(projectId, project.projectId);
+        ResearchProject rp = (ResearchProject) o;
+        return Objects.equals(projectId, rp.projectId);
     }
 
+    // Хэш-код по projectId
     @Override
     public int hashCode() {
         return Objects.hash(projectId);

@@ -1,63 +1,56 @@
+// Специалист технической поддержки.
+// Просматривает входящие запросы и меняет их статус:
+// VIEWED → ACCEPTED/REJECTED → DONE.
 import java.util.ArrayList;
 import java.util.List;
 
 public class TechSupportSpecialist extends Employee {
-    private List<Request> handledRequests;
 
+    // Конструктор — все поля приходят из Employee
     public TechSupportSpecialist(String id, String firstName, String lastName, String email,
                                   String password, Language language, String employeeId,
                                   double salary, String department) {
         super(id, firstName, lastName, email, password, language, employeeId, salary, department);
-        this.handledRequests = new ArrayList<>();
     }
 
-    // Посмотреть новые запросы (со статусом VIEWED)
+    // Получить список новых запросов со статусом VIEWED
     public List<Request> viewNewRequests(List<Request> allRequests) {
-        List<Request> newRequests = new ArrayList<>();
-        if (allRequests != null) {
-            for (Request req : allRequests) {
-                if (req.getStatus() == RequestStatus.VIEWED) {
-                    newRequests.add(req);
-                }
+        List<Request> result = new ArrayList<>();
+        if (allRequests == null) return result;
+        for (Request req : allRequests) {
+            // Отбираем только запросы в статусе VIEWED
+            if (req.getStatus() == RequestStatus.VIEWED) {
+                result.add(req);
             }
         }
-        return newRequests;
+        return result;
     }
 
-    // Принять запрос (изменить статус на ACCEPTED)
+    // Принять запрос: статус VIEWED → ACCEPTED
     public void acceptRequest(Request request) {
         if (request != null && request.getStatus() == RequestStatus.VIEWED) {
             request.setStatus(RequestStatus.ACCEPTED);
-            handledRequests.add(request);
         }
     }
 
-    // Отклонить запрос (изменить статус на REJECTED)
+    // Отклонить запрос: статус VIEWED → REJECTED
     public void rejectRequest(Request request) {
         if (request != null && request.getStatus() == RequestStatus.VIEWED) {
             request.setStatus(RequestStatus.REJECTED);
-            handledRequests.add(request);
         }
     }
 
-    // Отметить как выполненный (изменить статус на DONE)
+    // Пометить запрос как выполненный: статус ACCEPTED → DONE
     public void markAsDone(Request request) {
         if (request != null && request.getStatus() == RequestStatus.ACCEPTED) {
             request.setStatus(RequestStatus.DONE);
         }
     }
 
-    public List<Request> getHandledRequests() {
-        return new ArrayList<>(handledRequests);
-    }
-
+    // Строковое представление специалиста
     @Override
     public String toString() {
-        return "TechSupportSpecialist{" +
-                "id='" + id + '\'' +
-                ", name='" + firstName + " " + lastName + '\'' +
-                ", department='" + department + '\'' +
-                ", handledRequests=" + handledRequests.size() +
-                '}';
+        return "TechSupportSpecialist{id='" + id + "', name='" + firstName + " " + lastName
+                + "', dept='" + department + "'}";
     }
 }

@@ -1,14 +1,24 @@
+// Сообщение между сотрудниками университета.
+// Хранит отправителя, получателя, текст и дату.
 import java.util.Date;
 import java.util.Objects;
 
 public class Message {
+
+    // Уникальный идентификатор сообщения
     private String messageId;
+    // Отправитель сообщения
     private Employee sender;
+    // Получатель сообщения
     private Employee receiver;
+    // Текст сообщения
     private String content;
+    // Дата отправки
     private Date date;
 
-    public Message(String messageId, Employee sender, Employee receiver, String content, Date date) {
+    // Конструктор — инициализирует все поля сообщения
+    public Message(String messageId, Employee sender, Employee receiver,
+                   String content, Date date) {
         this.messageId = messageId;
         this.sender = sender;
         this.receiver = receiver;
@@ -16,45 +26,29 @@ public class Message {
         this.date = date;
     }
 
-    public String getMessageId() {
-        return messageId;
-    }
-
-    public Employee getSender() {
-        return sender;
-    }
-
-    public Employee getReceiver() {
-        return receiver;
-    }
-
+    // Получить текст сообщения (указано в диаграмме явно)
     public String getContent() {
         return content;
     }
 
-    public Date getDate() {
-        return date;
-    }
-
+    // Строковое представление сообщения
     @Override
     public String toString() {
-        return "Message{" +
-                "messageId='" + messageId + '\'' +
-                ", sender=" + sender.getFirstName() + " " + sender.getLastName() +
-                ", receiver=" + receiver.getFirstName() + " " + receiver.getLastName() +
-                ", content='" + content + '\'' +
-                ", date=" + date +
-                '}';
+        return "Message{from=" + (sender != null ? sender.getFirstName() + " " + sender.getLastName() : "null")
+                + ", to=" + (receiver != null ? receiver.getFirstName() + " " + receiver.getLastName() : "null")
+                + ", content='" + content + "', date=" + date + "}";
     }
 
+    // Два сообщения равны, если совпадают их messageId
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Message)) return false;
-        Message message = (Message) o;
-        return Objects.equals(messageId, message.messageId);
+        Message m = (Message) o;
+        return Objects.equals(messageId, m.messageId);
     }
 
+    // Хэш-код по messageId
     @Override
     public int hashCode() {
         return Objects.hash(messageId);

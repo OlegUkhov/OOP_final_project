@@ -30,7 +30,7 @@ public class Mark {
         return (firstAttestation + secondAttestation + finalExam) / 3.0;
     }
 
-    // Threshold boundaries follow a standard 100-point university scale
+    // Threshold boundaries follow a university scale
     public String getLetterGrade() {
         double score = getTotalScore();
         if (score >= 94.5) return "A";

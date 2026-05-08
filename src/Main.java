@@ -211,7 +211,7 @@ public class Main {
         System.out.println("Head: " + org.getHead().getFirstName() + " " + org.getHead().getLastName());
 
         // News
-        // Manager.manageNews() auto-pins news with topic "Research" via News.pin()
+        // Manager.manageNews() auto-pins news with topic Research via News.pin()
         System.out.println("\n[15] News");
         News researchNews = new News("New AI Lab", "University opens AI lab", "Research");
         manager.manageNews(researchNews);

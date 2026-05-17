@@ -58,11 +58,6 @@ enum CitationFormat {
   BIBTEX
 }
 
-enum MessageType {
-  REGULAR
-  REQUEST
-}
-
 ' ═══════════════════════════════════════════
 '  EXCEPTIONS
 ' ═══════════════════════════════════════════
@@ -93,10 +88,8 @@ abstract class User {
   # password: String
   # language: Language
   --
-  + {static} authenticate(email, pwd): User
-  + checkPassword(pwd): boolean
+  + login(): boolean
   + logout(): void
-  + onNewsReceived(n: News): void
   + toString(): String
   + equals(o: Object): boolean
   + hashCode(): int
@@ -105,24 +98,24 @@ abstract class User {
 class Student extends User {
   - studentId: String
   - gpa: double
+  - credits: int
   - failCount: int
-  - researcher: boolean
+  - courses: List<Course>
+  - marks: List<Mark>
+  - organizations: List<StudentOrganization>
   --
   + registerForCourse(c: Course): void
-  + submitRequest(description: String): void
-  + viewCourses(): List<Course>
-  + viewTeachersForCourse(c: Course): List<Teacher>
   + viewMarks(): List<Mark>
   + getTranscript(): String
   + rateTeacher(t: Teacher, rating: int): void
   + joinOrganization(org: StudentOrganization): void
   + getTotalCredits(): int
-  + viewAllNews(): void
   + toString(): String
 }
 
 class GraduateStudent extends Student {
   - supervisor: Researcher
+  - diplomaPapers: List<ResearchPaper>
   --
   + setSupervisor(r: Researcher): void
   + publishDiplomaPaper(p: ResearchPaper): void
@@ -140,16 +133,14 @@ abstract class Employee extends User {
 
 class Teacher extends Employee {
   - position: TeacherPosition
+  - courses: List<Course>
   - rating: double
-  - researcher: boolean
   --
   + viewCourses(): List<Course>
   + manageCourse(c: Course): void
   + putMark(s: Student, c: Course, m: Mark): void
   + sendComplaint(s: Student, text: String, urgency: ComplaintUrgency): Complaint
-  + viewStudentsInfo(): void
   + getPosition(): TeacherPosition
-  + isResearcher(): boolean
   + toString(): String
 }
 
@@ -163,9 +154,6 @@ class Manager extends Employee {
   + viewEmployeeRequests(): List<Request>
   + getStudentsSortedByGpa(): List<Student>
   + getStudentsSortedByName(): List<Student>
-  + publishNews(title, content, topic): void
-  + generateTopCitedResearcherNews(): void
-  + addCourseForRegistration(c: Course, major: String, year: int): void
 }
 
 class Admin extends Employee {
@@ -226,21 +214,18 @@ class StudentResearcher extends ResearcherDecorator {
 '  RESEARCH ENTITIES
 ' ═══════════════════════════════════════════
 class ResearchPaper {
-  - paperId: String
   - title: String
   - authors: List<String>
   - journal: String
   - citations: int
   - pages: int
-  - datePublished: Date
+  - date: Date
   - doi: String
-  - ownerId: String
   --
   + getCitation(f: CitationFormat): String
   + getCitations(): int
   + getPages(): int
-  + getDatePublished(): Date
-  + setOwnerId(id: String): void
+  + getDate(): Date
   + toString(): String
   + equals(o: Object): boolean
   + hashCode(): int
@@ -284,18 +269,13 @@ class Course {
   - name: String
   - credits: int
   - courseType: CourseType
-  - major: String
-  - studyYear: int
   - teachers: List<Teacher>
   - lessons: List<Lesson>
   --
   + addTeacher(t: Teacher): void
   + addLesson(l: Lesson): void
   + getLessons(): List<Lesson>
-  + getTeachers(): List<Teacher>
   + getCredits(): int
-  + setMajor(major: String): void
-  + setStudyYear(year: int): void
   + toString(): String
 }
 
@@ -355,7 +335,6 @@ class StudentOrganization {
 '  NEWS & MESSAGE
 ' ═══════════════════════════════════════════
 class News {
-  - newsId: String
   - title: String
   - content: String
   - topic: String
@@ -365,36 +344,30 @@ class News {
   --
   + addComment(c: String): void
   + pin(): void
-  + getTitle(): String
-  + getTopic(): String
   + toString(): String
 }
 
 class Message {
-  # messageId: String
-  # sender: User
-  # receiver: User
-  # content: String
-  # date: Date
-  # type: MessageType
+  - messageId: String
+  - sender: Employee
+  - receiver: Employee
+  - content: String
+  - date: Date
   --
   + getContent(): String
-  + getType(): MessageType
-  + isRequest(): boolean
   + toString(): String
 }
 
-class Request extends Message {
+class Request {
+  - requestId: String
+  - description: String
   - status: RequestStatus
+  - createdBy: Employee
+  - date: Date
   --
   + getStatus(): RequestStatus
   + setStatus(s: RequestStatus): void
   + toString(): String
-}
-
-class Enrollment {
-  - studentId: String
-  - courseId: String
 }
 
 ' ═══════════════════════════════════════════
@@ -443,33 +416,20 @@ class DataStorage {
   - {static} instance: DataStorage
   - users: List<User>
   - courses: List<Course>
-  - enrollments: List<Enrollment>
-  - marks: List<Mark>
   - papers: List<ResearchPaper>
   - projects: List<ResearchProject>
   - journals: List<Journal>
   - logs: List<Log>
   - news: List<News>
-  - messages: List<Message>
-  - complaints: List<Complaint>
-  - organizations: List<StudentOrganization>
   --
   - DataStorage()
   + {static} getInstance(): DataStorage
   + addUser(u: User): void
   + removeUser(id: String): void
-  + enrollStudent(s: Student, c: Course): void
-  + addMark(m: Mark): void
-  + addMessage(m: Message): void
-  + addNews(n: News): void
-  + publishNews(n: News): void
-  + getRequests(): List<Request>
   + getAllResearchers(): List<Researcher>
   + getTopCitedResearcher(): Researcher
-  + printAllResearchersPapers(c: Comparator): void
   + saveData(): void
   + loadData(): void
-  note: PrintWriter / Scanner, text files in data/
 }
 
 ' ═══════════════════════════════════════════
@@ -477,6 +437,13 @@ class DataStorage {
 ' ═══════════════════════════════════════════
 
 ' Inheritance
+Student         --|>  User
+GraduateStudent --|>  Student
+Employee        --|>  User
+Teacher         --|>  Employee
+Manager         --|>  Employee
+Admin           --|>  Employee
+TechSupportSpecialist --|> Employee
 
 ' Decorator wraps
 TeacherResearcher  -->  Teacher    : wraps
@@ -488,9 +455,8 @@ GraduateStudent "0..*" --> "1" Researcher : supervisor
 ' Course — Teacher (association)
 Course "0..*" --> "1..*" Teacher : taught by
 
-' Enrollment (stored in DataStorage)
-Enrollment --> Student : studentId
-Enrollment --> Course : courseId
+' Course — Student (association)
+Student "0..*" --> "0..*" Course : registers for
 
 ' Composition: Course -> Lesson
 Course "1" *-- "1..*" Lesson : contains
@@ -521,24 +487,19 @@ Lesson --> LessonType
 
 ' Mark — double attestation (already fields)
 
-' Message hierarchy
-Message --> MessageType
+' Request
 Request --> RequestStatus
-Message "0..*" --> "1" User : sender
-Message "0..*" --> "0..1" User : receiver
+Request "0..*" --> "1" Employee : created by
 
-' DataStorage aggregates everything (Singleton)
+' Message
+Message "0..*" --> "1" Employee : sender
+Message "0..*" --> "1" Employee : receiver
+
+' DataStorage aggregates everything
 DataStorage o-- User
 DataStorage o-- Course
-DataStorage o-- Enrollment
-DataStorage o-- Mark
-DataStorage o-- Message
-DataStorage o-- Complaint
-DataStorage o-- StudentOrganization
 DataStorage o-- Journal
 DataStorage o-- Log
 DataStorage o-- News
-DataStorage o-- ResearchPaper
-DataStorage o-- ResearchProject
 
 @enduml

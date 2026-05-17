@@ -1,946 +1,269 @@
-import java.util.ArrayList;
-import java.util.Comparator;
+// Entry point for the University Research System demo
+// Each numbered section shows one feature of the system running in sequence
 import java.util.Date;
 import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
 
-/**
- * Console application — all use cases from Use Case Diagram.
- * Uses every domain class: patterns Singleton, Decorator, Observer; Comparators; exceptions.
- */
 public class Main {
-
-    private static final Scanner scanner = new Scanner(System.in);
-    private static User currentUser;
-    private static DataStorage storage;
-
     public static void main(String[] args) {
-        printHeader();
-        storage = DataStorage.getInstance();
-        storage.loadData();
-        if (storage.getUsers().isEmpty()) {
-            out("No saved data. Loading sample data...");
-            initSampleData();
-        }
 
-        boolean running = true;
-        while (running) {
-            if (currentUser == null) {
-                running = loginScreen();
-            } else {
-                running = roleMenu();
-            }
-        }
-        storage.saveData();
-        out("\nData saved. Goodbye!");
-        scanner.close();
-    }
-
-    // ===================== AUTH (User) =====================
-
-    private static boolean loginScreen() {
-        User u = currentUser;
-        out("\n--- " + txt(u, "Login", "Кіру", "Вход") + " ---");
-        out("1. " + txt(u, "Login", "Кіру", "Войти"));
-        out("2. " + txt(u, "Exit", "Шығу", "Выход"));
-        pr(txt(u, "Choice: ", "Таңдау: ", "Выбор: "));
-        String c = scanner.nextLine().trim();
-        if ("2".equals(c)) return false;
-        if ("1".equals(c)) {
-            pr("Email: ");
-            String email = scanner.nextLine().trim();
-            pr(txt(u, "Password: ", "Құпия сөз: ", "Пароль: "));
-            String pass = scanner.nextLine().trim();
-            User user = User.authenticate(email, pass);
-            if (user != null) {
-                currentUser = user;
-                out("\n" + user.t("Welcome, ", "Қош келдіңіз, ", "Добро пожаловать, ")
-                        + user.getFirstName() + " " + user.getLastName()
-                        + " [" + roleName(user) + "]");
-            } else {
-                out(txt(u, "Invalid credentials.", "Қате деректер.", "Неверные данные."));
-            }
-        }
-        return true;
-    }
-
-    private static boolean roleMenu() {
-        out("\n========================================");
-        out("  " + currentUser.getFirstName() + " " + currentUser.getLastName()
-                + "  |  " + roleName(currentUser) + "  |  " + currentUser.getLanguage());
-        out("========================================");
-
-        if (currentUser instanceof Admin) return adminMenu((Admin) currentUser);
-        if (currentUser instanceof Manager) return managerMenu((Manager) currentUser);
-        if (currentUser instanceof TechSupportSpecialist) return techMenu((TechSupportSpecialist) currentUser);
-        if (currentUser instanceof Teacher) return teacherMenu((Teacher) currentUser);
-        if (currentUser instanceof GraduateStudent) return graduateMenu((GraduateStudent) currentUser);
-        if (currentUser instanceof Student) return studentMenu((Student) currentUser);
-        return handleCommon("0", currentUser);
-    }
-
-    // ===================== ADMIN =====================
-
-    private static boolean adminMenu(Admin a) {
-        printPanel(a, "Admin Panel", "Әкімші панелі", "Панель админа");
-        out("1.  " + a.t("View all users", "Барлық пайдаланушылар", "Все пользователи"));
-        out("2.  " + a.t("Add user", "Пайдаланушы қосу", "Добавить пользователя"));
-        out("3.  " + a.t("Update user", "Пайдаланушыны өзгерту", "Обновить пользователя"));
-        out("4.  " + a.t("Remove user", "Жою", "Удалить пользователя"));
-        out("5.  " + a.t("View log files", "Логтар", "Логи"));
-        printCommonMenu(a);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, a)) return !"0".equals(c);
-
-        switch (c) {
-            case "1":
-                for (User u : storage.getUsers()) outObj(u);
-                break;
-            case "2":
-                adminAddUser(a);
-                break;
-            case "3":
-                adminUpdateUser(a);
-                break;
-            case "4":
-                pr(a.t("User id: ", "ID: ", "ID: "));
-                a.removeUser(scanner.nextLine().trim());
-                out(a.t("Removed.", "Жойылды.", "Удалено."));
-                break;
-            case "5":
-                viewLogs(a);
-                break;
-            default:
-                out(a.t("Unknown option.", "Белгісіз.", "Неизвестно."));
-        }
-        return true;
-    }
-
-    // ===================== MANAGER =====================
-
-    private static boolean managerMenu(Manager m) {
-        printPanel(m, "Manager Panel", "Менеджер панелі", "Панель менеджера");
-        out("1.  " + m.t("Assign course to teacher", "Курс тағайындау", "Назначить курс"));
-        out("2.  " + m.t("Approve student registration", "Тіркеуді бекіту", "Одобрить регистрацию"));
-        out("3.  " + m.t("Add course for registration (major/year)", "Курс қосу (мамандық/курс)", "Добавить курс (major/year)"));
-        out("4.  " + m.t("Statistical report", "Есеп", "Статистический отчёт"));
-        out("5.  " + m.t("Publish news", "Жаңалық жариялау", "Опубликовать новость"));
-        out("6.  " + m.t("Top cited researcher news", "Топ цитирований", "Новость о топ исследователе"));
-        out("7.  " + m.t("Students sorted by GPA", "Студенттер GPA", "Студенты по GPA"));
-        out("8.  " + m.t("Students sorted by name", "Студенттер аты", "Студенты по имени"));
-        out("9.  " + m.t("Employee requests", "Қызметкер өтінімдері", "Заявки сотрудников"));
-        out("10. " + m.t("Print all university papers", "Барлық мақалалар", "Все статьи вуза"));
-        out("11. " + m.t("Submit employee request", "Өтініш жіберу", "Отправить заявку"));
-        printCommonMenu(m);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, m)) return !"0".equals(c);
-
-        try {
-            switch (c) {
-                case "1": assignCourseMenu(m); break;
-                case "2": approveRegistrationMenu(m); break;
-                case "3": addCourseForRegMenu(m); break;
-                case "4": out(m.createStatisticalReport()); break;
-                case "5": publishNewsMenu(m); break;
-                case "6": m.generateTopCitedResearcherNews(); break;
-                case "7":
-                    for (Student s : m.getStudentsSortedByGpa()) outObj(s);
-                    break;
-                case "8":
-                    for (Student s : m.getStudentsSortedByName()) outObj(s);
-                    break;
-                case "9":
-                    List<Request> er = m.viewEmployeeRequests();
-                    if (er.isEmpty()) out(m.t("(none)", "(жоқ)", "(нет)"));
-                    for (Request r : er) outObj(r);
-                    break;
-                case "10": printPapersMenu(null); break;
-                case "11": m.submitRequest(readLine(m.t("Request: ", "Өтініш: ", "Заявка: "))); break;
-                default: out(m.t("Unknown.", "Белгісіз.", "Неизвестно."));
-            }
-        } catch (CourseOverloadException | CourseFailLimitException ex) {
-            out("Error: " + ex.getMessage());
-        }
-        return true;
-    }
-
-    // ===================== TECH SUPPORT =====================
-
-    private static boolean techMenu(TechSupportSpecialist ts) {
-        printPanel(ts, "Tech Support", "Тех. қолдау", "Техподдержка");
-        out("1.  " + ts.t("View new requests (VIEWED)", "Жаңа өтінімдер", "Новые заявки"));
-        out("2.  " + ts.t("Accept request", "Қабылдау", "Принять"));
-        out("3.  " + ts.t("Reject request", "Қабылдамау", "Отклонить"));
-        out("4.  " + ts.t("Mark as DONE", "Орындалды", "Выполнено"));
-        printCommonMenu(ts);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, ts)) return !"0".equals(c);
-
-        switch (c) {
-            case "1":
-                List<Request> list = ts.viewNewRequests();
-                if (list.isEmpty()) out(ts.t("No new requests.", "Өтінім жоқ.", "Нет заявок."));
-                for (Request r : list) outObj(r);
-                break;
-            case "2": processRequest(ts, true, false, false); break;
-            case "3": processRequest(ts, false, true, false); break;
-            case "4": processRequest(ts, false, false, true); break;
-            default: out(ts.t("Unknown.", "Белгісіз.", "Неизвестно."));
-        }
-        return true;
-    }
-
-    // ===================== TEACHER =====================
-
-    private static boolean teacherMenu(Teacher t) {
-        printPanel(t, "Teacher Panel", "Оқытушы панелі", "Панель преподавателя");
-        out("1.  " + t.t("View courses", "Курстар", "Курсы"));
-        out("2.  " + t.t("Manage course (add lesson)", "Сабақ қосу", "Управление курсом"));
-        out("3.  " + t.t("Put mark (1st+2nd+final)", "Баға қою", "Выставить оценку"));
-        out("4.  " + t.t("View students info", "Студенттер", "Инфо о студентах"));
-        out("5.  " + t.t("Send complaint to dean", "Шағым", "Жалоба декану"));
-        out("6.  " + t.t("Send message to employee", "Хабарлама", "Сообщение"));
-        if (t.isResearcher()) printResearcherMenu(t);
-        else out("--- " + t.t("(Researcher: option 20)", "(Зертгер: 20)", "(Исследователь: 20)"));
-        out("20. " + t.t("Enable researcher role", "Зертгер рөлі", "Роль исследователя"));
-        printCommonMenu(t);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, t)) return !"0".equals(c);
-
-        try {
-            switch (c) {
-                case "1":
-                    for (Course co : t.viewCourses()) outObj(co);
-                    break;
-                case "2": manageCourseMenu(t); break;
-                case "3": putMarkMenu(t); break;
-                case "4": t.viewStudentsInfo(); break;
-                case "5": sendComplaintMenu(t); break;
-                case "6": sendMessageMenu(t); break;
-                case "7": if (t.isResearcher()) publishResearchMenu(t); else needResearcher(t); break;
-                case "8": if (t.isResearcher()) out("h-index: " + researcherOf(t).calculateHIndex()); else needResearcher(t); break;
-                case "9": if (t.isResearcher()) printPapersMenu(researcherOf(t)); else needResearcher(t); break;
-                case "10": if (t.isResearcher()) citationMenu(researcherOf(t)); else needResearcher(t); break;
-                case "11": if (t.isResearcher()) leadProjectMenu(researcherOf(t)); else needResearcher(t); break;
-                case "12": if (t.isResearcher()) addParticipantMenu(researcherOf(t)); else needResearcher(t); break;
-                case "20": t.setResearcher(true); out(t.t("Researcher enabled.", "Қосылды.", "Включено.")); break;
-                default: out(t.t("Unknown.", "Белгісіз.", "Неизвестно."));
-            }
-        } catch (CourseFailLimitException ex) {
-            out("Error: " + ex.getMessage());
-        }
-        return true;
-    }
-
-    // ===================== STUDENT =====================
-
-    private static boolean studentMenu(Student s) {
-        printPanel(s, "Student Panel", "Студент панелі", "Панель студента");
-        out("1.  " + s.t("My courses", "Менің курстарым", "Мои курсы"));
-        out("2.  " + s.t("Available courses", "Қолжетімді курстар", "Доступные курсы"));
-        out("3.  " + s.t("Register for course (max 21 cr, 3 fails)", "Тіркелу", "Регистрация"));
-        out("4.  " + s.t("Teachers of course", "Оқытушылар", "Преподаватели курса"));
-        out("5.  " + s.t("View marks", "Бағалар", "Оценки"));
-        out("6.  " + s.t("View transcript", "Транскрипт", "Транскрипт"));
-        out("7.  " + s.t("Rate teacher", "Бағалау", "Оценить преподавателя"));
-        out("8.  " + s.t("Join organization", "Ұйымға қосылу", "Вступить в организацию"));
-        out("9.  " + s.t("Become head of organization", "Төраға", "Глава организации"));
-        out("10. " + s.t("Submit tech request", "Тех. өтініш", "Тех. заявка"));
-        printCommonMenu(s);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, s)) return !"0".equals(c);
-
-        try {
-            switch (c) {
-                case "1":
-                    if (s.viewCourses().isEmpty()) out(s.t("(none)", "(жоқ)", "(нет)"));
-                    for (Course co : s.viewCourses()) outObj(co);
-                    break;
-                case "2":
-                    for (Course co : storage.getCourses()) outObj(co);
-                    break;
-                case "3": registerCourseMenu(s); break;
-                case "4": viewTeachersMenu(s); break;
-                case "5":
-                    if (s.viewMarks().isEmpty()) out(s.t("(none)", "(жоқ)", "(нет)"));
-                    for (Mark m : s.viewMarks()) outObj(m);
-                    break;
-                case "6": out(s.getTranscript()); break;
-                case "7": rateTeacherMenu(s); break;
-                case "8": joinOrgMenu(s); break;
-                case "9": setOrgHeadMenu(s); break;
-                case "10": s.submitRequest(readLine(s.t("Problem: ", "Мәселе: ", "Проблема: "))); break;
-                default: out(s.t("Unknown.", "Белгісіз.", "Неизвестно."));
-            }
-        } catch (CourseOverloadException | CourseFailLimitException ex) {
-            out("Error: " + ex.getMessage());
-        }
-        return true;
-    }
-
-    // ===================== GRADUATE STUDENT =====================
-
-    private static boolean graduateMenu(GraduateStudent gs) {
-        printPanel(gs, "Graduate Student", "Магистрант", "Магистрант");
-        out("--- " + gs.t("Student", "Студент", "Студент") + " ---");
-        out("1-10 " + gs.t("(same as student menu)", "(студент сияқты)", "(как у студента)"));
-        out("--- " + gs.t("Graduate", "Магистрант", "Магистрант") + " ---");
-        out("11. " + gs.t("Assign supervisor (h>=3)", "Жетекші", "Научрук"));
-        out("12. " + gs.t("Publish diploma paper", "Диплом", "Дипломная работа"));
-        out("--- " + gs.t("Researcher", "Зертгер", "Исследователь") + " ---");
-        out("13. " + gs.t("Publish research paper", "Мақала", "Публикация"));
-        out("14. " + gs.t("Calculate h-index", "h-индекс", "h-индекс"));
-        out("15. " + gs.t("Print papers sorted", "Мақалалар", "Статьи"));
-        out("16. " + gs.t("Get citation", "Цитата", "Цитирование"));
-        out("17. " + gs.t("Lead research project", "Жоба", "Проект"));
-        out("18. " + gs.t("Add participant", "Қатысушы", "Участник"));
-        printCommonMenu(gs);
-        pr("Choice: ");
-        String c = scanner.nextLine().trim();
-        if (handleCommon(c, gs)) return !"0".equals(c);
-
-        try {
-            if (c.length() == 1 && c.charAt(0) >= '1' && c.charAt(0) <= '9') {
-                studentAction(gs, c);
-                return true;
-            }
-            if ("10".equals(c)) { studentAction(gs, "10"); return true; }
-            switch (c) {
-                case "11": assignSupervisorMenu(gs); break;
-                case "12": publishDiplomaMenu(gs); break;
-                case "13": publishResearchMenu(gs); break;
-                case "14": out("h-index: " + researcherOf(gs).calculateHIndex()); break;
-                case "15": printPapersMenu(researcherOf(gs)); break;
-                case "16": citationMenu(researcherOf(gs)); break;
-                case "17": leadProjectMenu(researcherOf(gs)); break;
-                case "18": addParticipantMenu(researcherOf(gs)); break;
-                default: out(gs.t("Unknown.", "Белгісіз.", "Неизвестно."));
-            }
-        } catch (LowHIndexException | CourseOverloadException | CourseFailLimitException ex) {
-            out("Error: " + ex.getMessage());
-        }
-        return true;
-    }
-
-    private static void studentAction(Student s, String c) throws CourseOverloadException, CourseFailLimitException {
-        switch (c) {
-            case "1":
-                for (Course co : s.viewCourses()) outObj(co);
-                break;
-            case "2":
-                for (Course co : storage.getCourses()) outObj(co);
-                break;
-            case "3": registerCourseMenu(s); break;
-            case "4": viewTeachersMenu(s); break;
-            case "5":
-                for (Mark m : s.viewMarks()) outObj(m);
-                break;
-            case "6": out(s.getTranscript()); break;
-            case "7": rateTeacherMenu(s); break;
-            case "8": joinOrgMenu(s); break;
-            case "9": setOrgHeadMenu(s); break;
-            case "10": s.submitRequest(readLine("Problem: ")); break;
-        }
-    }
-
-    // ===================== COMMON (all User) =====================
-
-    private static void printCommonMenu(User u) {
-        out("--- " + u.t("All users", "Барлығы", "Все") + " ---");
-        out("90. " + u.t("Switch language KZ/EN/RU", "Тіл", "Язык"));
-        out("91. " + u.t("Subscribe to journal", "Жазылу", "Подписка на журнал"));
-        out("92. " + u.t("Unsubscribe from journal", "Жазылудан бас тарту", "Отписка"));
-        out("93. " + u.t("View news", "Жаңалықтар", "Новости"));
-        out("94. " + u.t("Publish paper to journal (notify)", "Журналға мақала", "Статья в журнал"));
-        out("95. " + u.t("Logout", "Шығу", "Выйти"));
-        out("0.  " + u.t("Save & Exit", "Сақтау", "Сохранить и выйти"));
-    }
-
-    /** @return true if choice was handled (common or exit) */
-    private static boolean handleCommon(String c, User u) {
-        switch (c) {
-            case "90": switchLanguage(); return true;
-            case "91": subscribeJournal(); return true;
-            case "92": unsubscribeJournal(); return true;
-            case "93":
-                if (u instanceof Student) ((Student) u).viewAllNews();
-                else if (u instanceof Employee) ((Employee) u).viewAllNews();
-                return true;
-            case "94": publishToJournalMenu(); return true;
-            case "95": u.logout(); currentUser = null; return true;
-            case "0": return true;
-            default: return false;
-        }
-    }
-
-    // ===================== RESEARCHER (Decorator) =====================
-
-    private static void printResearcherMenu(User u) {
-        out("7.  " + u.t("Publish research paper", "Мақала жариялау", "Публикация"));
-        out("8.  " + u.t("Calculate h-index", "h-индекс", "h-индекс"));
-        out("9.  " + u.t("Print papers sorted", "Мақалалар", "Статьи сортировка"));
-        out("10. " + u.t("Get citation Plain/BibTeX", "Цитата", "Цитирование"));
-        out("11. " + u.t("Lead research project", "Жоба", "Проект"));
-        out("12. " + u.t("Add participant to project", "Қатысушы", "Участник"));
-    }
-
-    private static Researcher researcherOf(Teacher t) {
-        return new TeacherResearcher(t);
-    }
-
-    private static Researcher researcherOf(Student s) {
-        return new StudentResearcher(s);
-    }
-
-    private static void needResearcher(Teacher t) {
-        out(t.t("Enable researcher (option 20).", "20 қосыңыз.", "Включите опцию 20."));
-    }
-
-    // ===================== ACTION MENUS =====================
-
-    private static void registerCourseMenu(Student s) {
-        Course c = pickCourse(storage.getCourses(), s.t("course", "курс", "курс"));
-        if (c != null) {
-            s.registerForCourse(c);
-            out(s.t("Registered.", "Тіркелді.", "Зарегистрирован."));
-        }
-    }
-
-    private static void viewTeachersMenu(Student s) {
-        Course c = pickCourse(s.viewCourses(), s.t("your course", "курс", "курс"));
-        if (c == null) return;
-        for (Teacher t : s.viewTeachersForCourse(c)) {
-            out("  " + t + " rating=" + String.format("%.2f", t.getRating()));
-        }
-    }
-
-    private static void rateTeacherMenu(Student s) {
-        Course c = pickCourse(s.viewCourses(), "course");
-        if (c == null || c.getTeachers().isEmpty()) return;
-        Teacher t = pickTeacher(c.getTeachers());
-        if (t == null) return;
-        int r = readInt(s.t("Rating 1-5: ", "1-5: ", "1-5: "));
-        s.rateTeacher(t, r);
-    }
-
-    private static void joinOrgMenu(Student s) {
-        pr(s.t("Organization name: ", "Атауы: ", "Название: "));
-        StudentOrganization org = new StudentOrganization(scanner.nextLine().trim());
-        s.joinOrganization(org);
-    }
-
-    private static void setOrgHeadMenu(Student s) {
-        for (StudentOrganization o : storage.getOrganizations()) {
-            if (o.getMembers().contains(s)) {
-                o.setHead(s);
-                out(s.t("You are head of ", "Төраға: ", "Глава: ") + o.getName());
-                return;
-            }
-        }
-        out(s.t("Join organization first.", "Алдымен қосылыңыз.", "Сначала вступите."));
-    }
-
-    private static void assignSupervisorMenu(GraduateStudent gs) throws LowHIndexException {
-        List<Researcher> list = storage.getAllResearchers();
-        if (list.isEmpty()) { out("(no researchers)"); return; }
-        Researcher r = pickResearcher(list);
-        if (r != null) {
-            gs.setSupervisor(r);
-            out(gs.t("Supervisor assigned.", "Тағайындалды.", "Назначен."));
-        }
-    }
-
-    private static void publishDiplomaMenu(GraduateStudent gs) {
-        pr("Title: ");
-        ResearchPaper p = new ResearchPaper(scanner.nextLine().trim(), "University Repository", 80, new Date());
-        p.addAuthor(gs.getFirstName() + " " + gs.getLastName());
-        gs.publishDiplomaPaper(p);
-        out("OK");
-    }
-
-    private static void publishResearchMenu(User owner) {
-        pr("Title: ");
-        String title = scanner.nextLine().trim();
-        pr("Citations count: ");
-        int cit = readInt("");
-        ResearchPaper p = new ResearchPaper(title, "University Journal", 20, new Date());
-        p.addAuthor(owner.getFirstName() + " " + owner.getLastName());
-        for (int i = 0; i < cit; i++) p.addCitation();
-        if (owner instanceof Teacher) researcherOf((Teacher) owner).publishPaper(p);
-        else if (owner instanceof Student) researcherOf((Student) owner).publishPaper(p);
-    }
-
-    private static void citationMenu(Researcher r) {
-        List<ResearchPaper> papers = r.getPapers();
-        if (papers.isEmpty()) { out("(no papers)"); return; }
-        ResearchPaper p = papers.get(0);
-        out("--- Plain Text ---\n" + p.getCitation(CitationFormat.PLAIN_TEXT));
-        out("--- BibTeX ---\n" + p.getCitation(CitationFormat.BIBTEX));
-    }
-
-    private static void leadProjectMenu(Researcher r) {
-        pr("Project topic: ");
-        ResearchProject project = new ResearchProject(scanner.nextLine().trim());
-        r.leadProject(project);
-        out("Project created, you are participant.");
-    }
-
-    private static void addParticipantMenu(Researcher r) {
-        List<ResearchProject> projects = storage.getProjects();
-        if (projects.isEmpty()) {
-            out("Create project first (option 11).");
-            return;
-        }
-        ResearchProject project = projects.get(0);
-        out("1. Add valid researcher  2. Demo NotResearcherException (null)");
-        if ("2".equals(scanner.nextLine().trim())) {
-            try {
-                project.addParticipant(null);
-            } catch (NotResearcherException e) {
-                out("Caught: " + e.getMessage());
-            }
-        } else {
-            List<Researcher> researchers = storage.getAllResearchers();
-            Researcher part = pickResearcher(researchers);
-            if (part != null) {
-                try {
-                    project.addParticipant(part);
-                    out("Participant added.");
-                } catch (NotResearcherException e) {
-                    out(e.getMessage());
-                }
-            }
-        }
-    }
-
-    private static void manageCourseMenu(Teacher t) {
-        Course c = pickCourse(t.viewCourses(), "course");
-        if (c == null) return;
-        pr("Lesson topic: ");
-        String topic = scanner.nextLine().trim();
-        out("1.LECTURE 2.PRACTICE");
-        LessonType lt = "2".equals(scanner.nextLine().trim()) ? LessonType.PRACTICE : LessonType.LECTURE;
-        c.addLesson(new Lesson("L" + System.currentTimeMillis(), topic, lt));
-        storage.addCourse(c);
-    }
-
-    private static void putMarkMenu(Teacher t) {
-        Course c = pickCourse(t.viewCourses(), "course");
-        if (c == null) return;
-        Student s = pickStudent();
-        if (s == null) return;
-        double a1 = readDouble("1st attestation: ");
-        double a2 = readDouble("2nd attestation: ");
-        double fin = readDouble("Final: ");
-        t.putMark(s, c, new Mark(a1, a2, fin, s, c));
-        out("Mark saved.");
-    }
-
-    private static void sendComplaintMenu(Teacher t) {
-        Student s = pickStudent();
-        if (s == null) return;
-        pr("Text: ");
-        String text = scanner.nextLine().trim();
-        out("1.LOW 2.MEDIUM 3.HIGH");
-        ComplaintUrgency u = ComplaintUrgency.MEDIUM;
-        String ch = scanner.nextLine().trim();
-        if ("1".equals(ch)) u = ComplaintUrgency.LOW;
-        else if ("3".equals(ch)) u = ComplaintUrgency.HIGH;
-        Complaint c = t.sendComplaint(s, text, u);
-        if (c != null) outObj(c);
-    }
-
-    private static void sendMessageMenu(Employee from) {
-        List<Employee> emps = new ArrayList<>();
-        for (User u : storage.getUsers()) {
-            if (u instanceof Employee && !u.equals(from)) emps.add((Employee) u);
-        }
-        Employee to = pickEmployee(emps);
-        if (to == null) return;
-        pr("Message: ");
-        from.sendMessage(to, scanner.nextLine().trim());
-    }
-
-    private static void assignCourseMenu(Manager m) {
-        Teacher t = pickTeacher(allTeachers());
-        Course c = pickCourse(storage.getCourses(), "course");
-        if (t != null && c != null) {
-            m.assignCourse(t, c);
-            out("Assigned.");
-        }
-    }
-
-    private static void approveRegistrationMenu(Manager m) {
-        Student s = pickStudent();
-        Course c = pickCourse(storage.getCourses(), "course");
-        if (s != null && c != null) {
-            m.approveRegistration(s, c);
-            out("Approved.");
-        }
-    }
-
-    private static void addCourseForRegMenu(Manager m) {
-        pr("Course id: ");
-        String id = scanner.nextLine().trim();
-        pr("Name: ");
-        String name = scanner.nextLine().trim();
-        int cred = readInt("Credits: ");
-        pr("Type 1.MAJOR 2.MINOR 3.FREE_ELECTIVE: ");
-        CourseType ct = CourseType.MAJOR;
-        String tc = scanner.nextLine().trim();
-        if ("2".equals(tc)) ct = CourseType.MINOR;
-        else if ("3".equals(tc)) ct = CourseType.FREE_ELECTIVE;
-        pr("Major: ");
-        String major = scanner.nextLine().trim();
-        int year = readInt("Study year: ");
-        Course course = new Course(id, name, cred, ct, major, year);
-        m.addCourseForRegistration(course, major, year);
-    }
-
-    private static void publishNewsMenu(Manager m) {
-        pr("Title: ");
-        String title = scanner.nextLine().trim();
-        pr("Content: ");
-        String content = scanner.nextLine().trim();
-        pr("Topic (Research = pinned): ");
-        String topic = scanner.nextLine().trim();
-        m.publishNews(title, content, topic);
-    }
-
-    private static void publishToJournalMenu() {
-        List<Journal> journals = storage.getJournals();
-        if (journals.isEmpty()) {
-            out("No journals in system.");
-            return;
-        }
-        Journal j = journals.get(0);
-        pr("Paper title for journal: ");
-        ResearchPaper p = new ResearchPaper(scanner.nextLine().trim(), j.getName(), 15, new Date());
-        j.publishPaper(p);
-        out("Published — subscribers notified (Observer).");
-    }
-
-    private static void printPapersMenu(Researcher r) {
-        out("Sort: 1.Date 2.Citations 3.Pages");
-        Comparator<ResearchPaper> comp = new DateComparator();
-        String ch = scanner.nextLine().trim();
-        if ("2".equals(ch)) comp = new CitationComparator();
-        else if ("3".equals(ch)) comp = new LengthComparator();
-        if (r != null) r.printPapers(comp);
-        else storage.printAllResearchersPapers(comp);
-    }
-
-    private static void processRequest(TechSupportSpecialist ts, boolean accept, boolean reject, boolean done) {
-        List<Request> pool = done ? allAcceptedRequests() : ts.viewNewRequests();
-        if (pool.isEmpty()) {
-            out("No matching requests.");
-            return;
-        }
-        Request r = pickRequest(pool);
-        if (r == null) return;
-        if (accept) ts.acceptRequest(r);
-        else if (reject) ts.rejectRequest(r);
-        else if (done) ts.markAsDone(r);
-        out("Status: " + r.getStatus());
-    }
-
-    private static List<Request> allAcceptedRequests() {
-        List<Request> list = new ArrayList<>();
-        for (Request r : storage.getRequests()) {
-            if (r.getStatus() == RequestStatus.ACCEPTED) list.add(r);
-        }
-        return list;
-    }
-
-    // ===================== ADMIN HELPERS =====================
-
-    private static void adminAddUser(Admin a) {
-        out("Type: 1.Student 2.Teacher 3.Graduate 4.Manager 5.TechSupport");
-        String type = scanner.nextLine().trim();
-        pr("ID: ");
-        String id = scanner.nextLine().trim();
-        pr("First name: ");
-        String fn = scanner.nextLine().trim();
-        pr("Last name: ");
-        String ln = scanner.nextLine().trim();
-        pr("Email: ");
-        String email = scanner.nextLine().trim();
-        pr("Password: ");
-        String pass = scanner.nextLine().trim();
-        Language lang = a.getLanguage();
-
-        switch (type) {
-            case "2":
-                a.addUser(new Teacher(id, fn, ln, email, pass, lang, "EMP" + id, 50000,
-                        "General", TeacherPosition.LECTOR));
-                break;
-            case "3":
-                a.addUser(new GraduateStudent(id, fn, ln, email, pass, lang, id));
-                break;
-            case "4":
-                a.addUser(new Manager(id, fn, ln, email, pass, lang, "EMP" + id, 55000,
-                        "Office", ManagerType.DEPARTMENT));
-                break;
-            case "5":
-                a.addUser(new TechSupportSpecialist(id, fn, ln, email, pass, lang, "EMP" + id, 40000, "IT"));
-                break;
-            default:
-                a.addUser(new Student(id, fn, ln, email, pass, lang, id));
-        }
-        out("User added.");
-    }
-
-    private static void adminUpdateUser(Admin a) {
-        pr("User id: ");
-        User u = storage.findUserById(scanner.nextLine().trim());
-        if (u == null) { out("Not found."); return; }
-        pr("New email (empty=skip): ");
-        String email = scanner.nextLine().trim();
-        if (!email.isEmpty()) {
-            // simple: recreate not needed — update via storage replace
-            out("Email update stored on next save for id " + u.getId());
-        }
-        a.updateUser(u);
-        out("User updated (logged).");
-    }
-
-    private static void viewLogs(Admin a) {
-        List<Log> logs = a.viewLogFiles();
-        if (logs.isEmpty()) {
-            out(a.t("No logs. Add/remove/update users to create logs.",
-                    "Лог жоқ.", "Логов нет."));
-        } else {
-            for (Log log : logs) outObj(log);
-        }
-    }
-
-    // ===================== PICKERS =====================
-
-    private static Course pickCourse(List<Course> list, String label) {
-        if (list == null || list.isEmpty()) { out("No courses."); return null; }
-        for (int i = 0; i < list.size(); i++) out((i + 1) + ". " + list.get(i));
-        int idx = readInt("Select " + label + ": ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    private static Student pickStudent() {
-        List<Student> list = new ArrayList<>();
-        for (User u : storage.getUsers()) {
-            if (u instanceof Student) list.add((Student) u);
-        }
-        if (list.isEmpty()) return null;
-        for (int i = 0; i < list.size(); i++) out((i + 1) + ". " + list.get(i));
-        int idx = readInt("Select student: ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    private static Teacher pickTeacher(List<Teacher> list) {
-        if (list == null || list.isEmpty()) return null;
-        for (int i = 0; i < list.size(); i++) out((i + 1) + ". " + list.get(i));
-        int idx = readInt("Select teacher: ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    private static List<Teacher> allTeachers() {
-        List<Teacher> list = new ArrayList<>();
-        for (User u : storage.getUsers()) {
-            if (u instanceof Teacher) list.add((Teacher) u);
-        }
-        return list;
-    }
-
-    private static Employee pickEmployee(List<Employee> list) {
-        if (list.isEmpty()) return null;
-        for (int i = 0; i < list.size(); i++) out((i + 1) + ". " + list.get(i));
-        int idx = readInt("Select: ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    private static Researcher pickResearcher(List<Researcher> list) {
-        for (int i = 0; i < list.size(); i++) {
-            out((i + 1) + ". h-index=" + list.get(i).calculateHIndex());
-        }
-        int idx = readInt("Select: ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    private static Request pickRequest(List<Request> list) {
-        for (int i = 0; i < list.size(); i++) out((i + 1) + ". " + list.get(i));
-        int idx = readInt("Select request: ") - 1;
-        if (idx >= 0 && idx < list.size()) return list.get(idx);
-        return null;
-    }
-
-    // ===================== JOURNAL / LANGUAGE =====================
-
-    private static void switchLanguage() {
-        out(currentUser.t("1.KZ 2.EN 3.RU", "1.KZ 2.EN 3.RU", "1.KZ 2.EN 3.RU"));
-        String c = scanner.nextLine().trim();
-        if ("1".equals(c)) currentUser.setLanguage(Language.KZ);
-        else if ("2".equals(c)) currentUser.setLanguage(Language.EN);
-        else if ("3".equals(c)) currentUser.setLanguage(Language.RU);
-    }
-
-    private static void subscribeJournal() {
-        List<Journal> journals = storage.getJournals();
-        if (journals.isEmpty()) { out("No journals."); return; }
-        for (int i = 0; i < journals.size(); i++) out((i + 1) + ". " + journals.get(i).getName());
-        int idx = readInt("Journal: ") - 1;
-        if (idx >= 0 && idx < journals.size()) {
-            journals.get(idx).subscribe(currentUser);
-            out("Subscribed.");
-        }
-    }
-
-    private static void unsubscribeJournal() {
-        List<Journal> journals = storage.getJournals();
-        for (int i = 0; i < journals.size(); i++) out((i + 1) + ". " + journals.get(i).getName());
-        int idx = readInt("Journal: ") - 1;
-        if (idx >= 0 && idx < journals.size()) {
-            journals.get(idx).unsubscribe(currentUser);
-            out("Unsubscribed.");
-        }
-    }
-
-    // ===================== SAMPLE DATA =====================
-
-    private static void initSampleData() {
-        Admin admin = new Admin("ADM001", "Alice", "Johnson", "admin@uni.edu", "admin",
-                Language.EN, "EMP001", 60000, "Administration");
+        System.out.println("=".repeat(65));
+        System.out.println("  University Research System - Demo");
+        System.out.println("=".repeat(65));
+
+        // DataStorage Singleton
+        // getInstance() creates the single instance on first call; all sections share it
+        System.out.println("\n[1] DataStorage (Singleton)");
+        DataStorage storage = DataStorage.getInstance();
+        System.out.println(storage);
+
+        // Creating users
+        System.out.println("\n[2] Creating users");
+
+        Admin admin = new Admin(
+            "ADM001", "Alice", "Johnson", "alice@uni.edu", "pass",
+            Language.EN, "EMP001", 60000, "Administration"
+        );
         storage.addUser(admin);
+        System.out.println("Admin: " + admin);
 
-        Teacher professor = new Teacher("TCH001", "Bob", "Smith", "teacher@uni.edu", "teacher",
-                Language.EN, "EMP002", 70000, "Computer Science", TeacherPosition.PROFESSOR);
+        // PROFESSOR position makes DataStorage.getAllResearchers() wrap this teacher automatically
+        Teacher professor = new Teacher(
+            "TCH001", "Bob", "Smith", "bob@uni.edu", "pass",
+            Language.EN, "EMP002", 70000, "Computer Science",
+            TeacherPosition.PROFESSOR
+        );
         storage.addUser(professor);
+        System.out.println("Professor: " + professor);
 
-        Manager manager = new Manager("MGR001", "Charlie", "Brown", "manager@uni.edu", "manager",
-                Language.EN, "EMP003", 55000, "Academic Affairs", ManagerType.DEPARTMENT);
+        Manager manager = new Manager(
+            "MGR001", "Charlie", "Brown", "charlie@uni.edu", "pass",
+            Language.EN, "EMP003", 55000, "Academic Affairs",
+            ManagerType.DEPARTMENT
+        );
         storage.addUser(manager);
+        System.out.println("Manager: " + manager);
 
-        Student student = new Student("STU001", "David", "Wilson", "student@uni.edu", "student",
-                Language.EN, "STU001");
+        Student student = new Student(
+            "STU001", "David", "Wilson", "david@uni.edu", "pass",
+            Language.EN, "STU001"
+        );
         student.setGpa(3.85);
         storage.addUser(student);
+        System.out.println("Student: " + student);
 
-        GraduateStudent graduate = new GraduateStudent("STU002", "Emma", "Davis", "graduate@uni.edu",
-                "graduate", Language.EN, "STU002");
+        // GraduateStudent extends Student
+        GraduateStudent graduate = new GraduateStudent(
+            "STU002", "Emma", "Davis", "emma@uni.edu", "pass",
+            Language.EN, "STU002"
+        );
         graduate.setGpa(3.95);
         storage.addUser(graduate);
+        System.out.println("Graduate: " + graduate);
 
-        TechSupportSpecialist tech = new TechSupportSpecialist("TEC001", "Frank", "Miller",
-                "tech@uni.edu", "tech", Language.EN, "EMP004", 40000, "IT");
-        storage.addUser(tech);
+        // Courses
+        // Manager.assignCourse() calls Teacher.manageCourse() which also calls Course.addTeacher()
+        System.out.println("\n[3] Creating courses");
 
-        Course javaCourse = new Course("CMP101", "Advanced Java", 3, CourseType.MAJOR, "SITE", 2);
-        javaCourse.addLesson(new Lesson("L01", "OOP", LessonType.LECTURE));
-        javaCourse.addLesson(new Lesson("L02", "Patterns", LessonType.PRACTICE));
-        professor.manageCourse(javaCourse);
+        Course javaCourse = new Course("CMP101", "Advanced Java", 3, CourseType.MAJOR);
+        manager.assignCourse(professor, javaCourse);
         storage.addCourse(javaCourse);
 
-        Course algoCourse = new Course("CMP201", "Algorithms", 4, CourseType.MAJOR, "SITE", 3);
-        professor.manageCourse(algoCourse);
+        Course algoCourse = new Course("CMP201", "Algorithms", 4, CourseType.MAJOR);
+        manager.assignCourse(professor, algoCourse);
         storage.addCourse(algoCourse);
 
-            manager.approveRegistration(student, javaCourse);
+        javaCourse.addLesson(new Lesson("L01", "OOP", LessonType.LECTURE));
+        javaCourse.addLesson(new Lesson("L02", "Patterns", LessonType.PRACTICE));
+        System.out.println("Java course: " + javaCourse);
 
-        Mark mark = new Mark(95, 92, 98, student, javaCourse);
-        professor.putMark(student, javaCourse, mark);
+        // Student registration
+        // approveRegistration() pre-checks credits then calls Student.registerForCourse()
+        // CourseOverloadException is thrown if total would exceed 21
+        System.out.println("\n[4] Student registration");
+        try {
+            manager.approveRegistration(student, javaCourse);
+            manager.approveRegistration(student, algoCourse);
+            System.out.println("Total credits: " + student.getTotalCredits());
+        } catch (CourseOverloadException e) {
+            System.err.println("Overload: " + e.getMessage());
+        }
+
+        // Grading
+        // Teacher.putMark() pushes the Mark object into student via Student.addMark()
+        System.out.println("\n[5] Grading");
+
+        Mark mark1 = new Mark(95, 92, 98, student, javaCourse);
+        professor.putMark(student, javaCourse, mark1);
+
+        Mark mark2 = new Mark(88, 85, 90, student, algoCourse);
+        professor.putMark(student, algoCourse, mark2);
+
+        for (Mark m : student.viewMarks()) {
+            System.out.println(m);
+        }
+
+        // Rating teacher
+        // Student.rateTeacher() delegates to Teacher.addRating() which keeps a running average
+        System.out.println("\n[6] Rating teacher");
+        student.rateTeacher(professor, 5);
+        student.rateTeacher(professor, 5);
+        student.rateTeacher(professor, 4);
+        System.out.println("Professor rating: " + String.format("%.2f", professor.getRating()));
+
+        // Complaint
+        // Teacher.sendComplaint() creates and returns a Complaint object
+        System.out.println("\n[7] Complaint");
+        Complaint complaint = professor.sendComplaint(student,
+            "Late to class repeatedly", ComplaintUrgency.MEDIUM);
+        System.out.println(complaint);
+
+        // Researcher Decorator pattern
+        // TeacherResearcher wraps professor; all paper and h-index logic is in ResearcherDecorator
+        System.out.println("\n[8] Researcher (Decorator)");
 
         TeacherResearcher resProf = new TeacherResearcher(professor);
-        for (int i = 0; i < 15; i++) {
-            ResearchPaper p = new ResearchPaper("ML Paper " + (i + 1), "IEEE", 20, new Date());
-            p.addAuthor("Bob Smith");
-            for (int j = 0; j <= i; j++) p.addCitation();
-            resProf.publishPaper(p);
+
+        ResearchPaper paper1 = new ResearchPaper(
+            "Machine Learning in Java", "Journal of Software Eng.", 25, new Date());
+        paper1.addAuthor("Bob Smith");
+        for (int i = 0; i < 15; i++) paper1.addCitation();
+        resProf.publishPaper(paper1);
+        storage.addPaper(paper1);
+
+        ResearchPaper paper2 = new ResearchPaper(
+            "Design Patterns in Distributed Systems", "ACM Computing Surveys", 32, new Date());
+        paper2.addAuthor("Bob Smith");
+        for (int i = 0; i < 28; i++) paper2.addCitation();
+        resProf.publishPaper(paper2);
+        storage.addPaper(paper2);
+
+        // Third paper pushes h-index to 3 which is the minimum to become a supervisor
+        ResearchPaper paper3 = new ResearchPaper(
+            "Neural Networks Overview", "IEEE Transactions", 18, new Date());
+        paper3.addAuthor("Bob Smith");
+        for (int i = 0; i < 10; i++) paper3.addCitation();
+        resProf.publishPaper(paper3);
+        storage.addPaper(paper3);
+
+        System.out.println("h-index: " + resProf.calculateHIndex());
+
+        // Supervisor for graduate student
+        // GraduateStudent.setSupervisor() calls researcher.calculateHIndex()
+        // LowHIndexException is thrown if h-index < 3
+        System.out.println("\n[9] Assigning supervisor");
+        try {
+            graduate.setSupervisor(resProf);
+            System.out.println("Supervisor assigned: " + graduate);
+        } catch (LowHIndexException e) {
+            System.err.println(e.getMessage());
         }
+
+        ResearchPaper diploma = new ResearchPaper(
+            "Thesis: Advanced ML", "University Repository", 120, new Date());
+        diploma.addAuthor("Emma Davis");
+        graduate.publishDiplomaPaper(diploma);
+        System.out.println("Diploma papers: " + graduate.getDiplomaPapers().size());
+
+        // Sorted paper printing
+        // printPapers() uses ResearcherDecorator logic with the passed Comparator
+        System.out.println("\n[10] Papers sorted by citations");
+        resProf.printPapers(new CitationComparator());
+
+        // Citation formats
+        // getCitation() routes to private methods based on CitationFormat enum
+        System.out.println("\n[11] Citation formats");
+        System.out.println(paper1.getCitation(CitationFormat.PLAIN_TEXT));
+        System.out.println(paper2.getCitation(CitationFormat.BIBTEX));
+
+        // Journal and Observer pattern
+        // journal.subscribe() stores the User as Observer
+        // publishPaper() calls notifyObservers() which calls User.update() on each subscriber
+        System.out.println("\n[12] Journal (Observer Pattern)");
 
         Journal journal = new Journal("Journal of Computer Science");
         storage.addJournal(journal);
         journal.subscribe(student);
         journal.subscribe(graduate);
+        System.out.println("Journal: " + journal);
 
-        manager.publishNews("Welcome", "University Research System is online.", "General");
+        ResearchPaper journalPaper = new ResearchPaper(
+            "Cloud Computing Trends", "Journal of Computer Science", 45, new Date());
+        journalPaper.addAuthor("Research Team");
+        journal.publishPaper(journalPaper);
 
-        student.submitRequest("Fix projector in room 101");
+        // Research project
+        // resProf.leadProject() calls ResearchProject.addParticipant(this)
+        System.out.println("\n[13] Research project");
+        ResearchProject project = new ResearchProject("AI in Education");
+        resProf.leadProject(project);
+        project.addPaper(paper1);
+        storage.addProject(project);
+        System.out.println(project);
 
-        ResearchProject proj = new ResearchProject("AI in Education");
-        resProf.leadProject(proj);
+        // Student organization
+        // Student.joinOrganization() also calls org.addMember(this) internally
+        System.out.println("\n[14] Student organization");
+        StudentOrganization org = new StudentOrganization("CS Club");
+        student.joinOrganization(org);
+        graduate.joinOrganization(org);
+        org.setHead(student);
+        System.out.println(org);
+        System.out.println("Head: " + org.getHead().getFirstName() + " " + org.getHead().getLastName());
 
-        storage.addLog(new Log(UUID.randomUUID().toString(), "ADM001",
-                "System initialized", new Date()));
+        // News
+        // Manager.manageNews() auto-pins news with topic Research via News.pin()
+        System.out.println("\n[15] News");
+        News researchNews = new News("New AI Lab", "University opens AI lab", "Research");
+        manager.manageNews(researchNews);
+        storage.addNews(researchNews);
+        researchNews.addComment("Great initiative!");
+        System.out.println(researchNews);
 
-        out("\n--- Sample accounts ---");
-        out("  admin@uni.edu     / admin");
-        out("  teacher@uni.edu   / teacher  (Professor, researcher)");
-        out("  manager@uni.edu   / manager");
-        out("  student@uni.edu   / student");
-        out("  graduate@uni.edu  / graduate (researcher)");
-        out("  tech@uni.edu      / tech");
-    }
+        // Tech support
+        // Status flow shown VIEWED -> ACCEPTED -> DONE
+        // rejectRequest() would go VIEWED -> REJECTED instead
+        System.out.println("\n[16] Tech support");
 
-    // ===================== UTIL =====================
+        TechSupportSpecialist tech = new TechSupportSpecialist(
+            "TEC001", "Frank", "Miller", "frank@uni.edu", "pass",
+            Language.EN, "EMP004", 40000, "IT"
+        );
+        storage.addUser(tech);
 
-    private static void printHeader() {
-        out("╔══════════════════════════════════════════════════╗");
-        out("║     UNIVERSITY RESEARCH SYSTEM                   ║");
-        out("║     OOP Final Project — full use case coverage   ║");
-        out("╚══════════════════════════════════════════════════╝");
-    }
+        Request req = new Request("REQ001", "Fix projector in room 101", student);
+        System.out.println("Created " + req);
 
-    private static String roleName(User u) {
-        if (u instanceof Admin) return u.t("Admin", "Әкімші", "Админ");
-        if (u instanceof Manager) return u.t("Manager", "Менеджер", "Менеджер");
-        if (u instanceof TechSupportSpecialist) return u.t("Tech Support", "Тех. қолдау", "Техподдержка");
-        if (u instanceof Teacher) return u.t("Teacher", "Оқытушы", "Преподаватель");
-        if (u instanceof GraduateStudent) return u.t("Graduate", "Магистрант", "Магистрант");
-        if (u instanceof Student) return u.t("Student", "Студент", "Студент");
-        return "User";
-    }
+        tech.acceptRequest(req);
+        System.out.println("After accept " + req.getStatus());
 
-    private static String txt(User u, String en, String kz, String ru) {
-        if (u == null) return en;
-        return u.t(en, kz, ru);
-    }
+        tech.markAsDone(req);
+        System.out.println("After done " + req.getStatus());
 
-    private static void printPanel(User u, String en, String kz, String ru) {
-        out("\n--- " + u.t(en, kz, ru) + " ---");
-    }
+        // Messaging
+        // Employee.sendMessage() creates a Message object and prints it immediately
+        System.out.println("\n[17] Messaging");
+        professor.sendMessage(manager, "Can we schedule extra labs?");
 
-    private static int readInt(String prompt) {
-        pr(prompt);
-        try {
-            return Integer.parseInt(scanner.nextLine().trim());
-        } catch (NumberFormatException e) {
-            return -1;
+        // Reports and transcript
+        // createStatisticalReport() is a simple string builder; can be extended in Part C
+        // getTranscript() iterates student.marks and formats each Mark via Mark.toString()
+        System.out.println("\n[18] Reports");
+        System.out.println(manager.createStatisticalReport());
+        System.out.println(student.getTranscript());
+
+        // Top cited researcher
+        // DataStorage.getTopCitedResearcher() wraps users on the fly and compares h-index values
+        // Casts to TeacherResearcher to call getTeacher() for display
+        System.out.println("\n[19] Top cited researcher");
+        Researcher top = storage.getTopCitedResearcher();
+        if (top instanceof TeacherResearcher) {
+            Teacher t = ((TeacherResearcher) top).getTeacher();
+            System.out.println("Top " + t.getFirstName() + " " + t.getLastName()
+                + " (h-index=" + top.calculateHIndex() + ")");
         }
-    }
 
-    private static double readDouble(String prompt) {
-        pr(prompt);
-        try {
-            return Double.parseDouble(scanner.nextLine().trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        System.out.println("\n" + "=".repeat(65));
+        System.out.println("Final state " + storage);
+        System.out.println("Demo completed!");
     }
-
-    private static String readLine(String prompt) {
-        pr(prompt);
-        return scanner.nextLine().trim();
-    }
-
-    private static void out(String s) { System.out.println(s); }
-    private static void pr(String s) { System.out.print(s); }
-    private static void outObj(Object o) { System.out.println(o); }
 }

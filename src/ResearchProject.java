@@ -1,3 +1,5 @@
+// A research project with a topic list of Researcher participants and published papers
+// Only Researcher instances can be added; null input throws NotResearcherException
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -7,6 +9,7 @@ public class ResearchProject {
 
     private String projectId;
     private String topic;
+    // All entries here must implement Researcher; enforced by the addParticipant guard
     private List<Researcher> participants;
     private List<ResearchPaper> papers;
 
@@ -17,31 +20,46 @@ public class ResearchProject {
         this.papers = new ArrayList<>();
     }
 
+    // Throws NotResearcherException for null to satisfy the spec requirement
+    // ResearcherDecorator.leadProject() catches this exception internally
     public void addParticipant(Researcher researcher) throws NotResearcherException {
         if (researcher == null) {
-            throw new NotResearcherException("Participant must be a Researcher");
+            throw new NotResearcherException("Participant cannot be null");
         }
-        if (!participants.contains(researcher)) participants.add(researcher);
+        if (!participants.contains(researcher)) {
+            participants.add(researcher);
+        }
+    }
+
+    public void removeParticipant(Researcher researcher) {
+        if (researcher != null) {
+            participants.remove(researcher);
+        }
     }
 
     public void addPaper(ResearchPaper paper) {
-        if (paper != null && !papers.contains(paper)) papers.add(paper);
+        if (paper != null && !papers.contains(paper)) {
+            papers.add(paper);
+        }
     }
 
-    public String getTopic() {
-        return topic;
+    public List<Researcher> getParticipants() {
+        return new ArrayList<>(participants);
     }
 
     @Override
     public String toString() {
-        return "ResearchProject{topic='" + topic + "', participants=" + participants.size() + "}";
+        return "ResearchProject{id='" + projectId + "', topic='" + topic
+                + "', participants=" + participants.size()
+                + ", papers=" + papers.size() + "}";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ResearchProject)) return false;
-        return Objects.equals(projectId, ((ResearchProject) o).projectId);
+        ResearchProject rp = (ResearchProject) o;
+        return Objects.equals(projectId, rp.projectId);
     }
 
     @Override

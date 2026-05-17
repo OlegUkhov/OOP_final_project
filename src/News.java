@@ -1,3 +1,5 @@
+// A university news item; supports comments and a pinned flag
+// Manager.manageNews() automatically pins items whose topic is "Research"
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -9,6 +11,7 @@ public class News {
     private String newsId;
     private String title;
     private String content;
+    // Checked in Manager.manageNews() to decide if auto-pin applies
     private String topic;
     private boolean isPinned;
     private Date date;
@@ -25,41 +28,41 @@ public class News {
     }
 
     public void addComment(String comment) {
-        if (comment != null && !comment.isEmpty()) comments.add(comment);
+        if (comment != null && !comment.isEmpty()) {
+            comments.add(comment);
+        }
     }
 
-    public void pin() { this.isPinned = true; }
+    // Sets isPinned to true; called by Manager.manageNews() for Research topic news
+    public void pin() {
+        this.isPinned = true;
+    }
 
-    public String getNewsId() { return newsId; }
-    public String getTitle() { return title; }
-    public String getContent() { return content; }
-    public String getTopic() { return topic; }
-    public boolean isPinned() { return isPinned; }
+    // Read by Manager.manageNews() to check if this news should be auto-pinned
+    public String getTopic() {
+        return topic;
+    }
 
-    public List<String> getComments() { return new ArrayList<>(comments); }
+    public boolean isPinned() {
+        return isPinned;
+    }
 
-    /** Readable output for console (not debug-style toString). */
-    public void print(User viewer) {
-        System.out.println("  " + viewer.t("Title:", "Тақырып:", "Заголовок:") + " " + title);
-        System.out.println("  " + viewer.t("Topic:", "Сала:", "Тема:") + " " + topic
-                + (isPinned ? " [" + viewer.t("PINNED", "БЕКІТІЛГЕН", "ЗАКРЕПЛЕНО") + "]" : ""));
-        System.out.println("  " + viewer.t("Text:", "Мәтін:", "Текст:"));
-        System.out.println("    " + content);
-        if (!comments.isEmpty()) {
-            System.out.println("  " + viewer.t("Comments:", "Пікірлер:", "Комментарии:") + " " + comments.size());
-        }
+    public List<String> getComments() {
+        return new ArrayList<>(comments);
     }
 
     @Override
     public String toString() {
-        return title + " (" + topic + ")" + (isPinned ? " [pinned]" : "");
+        return "News{title='" + title + "', topic='" + topic
+                + "', pinned=" + isPinned + ", comments=" + comments.size() + "}";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof News)) return false;
-        return Objects.equals(newsId, ((News) o).newsId);
+        News n = (News) o;
+        return Objects.equals(newsId, n.newsId);
     }
 
     @Override

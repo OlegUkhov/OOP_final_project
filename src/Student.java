@@ -1,98 +1,84 @@
+// Bachelor-level student
+// Can register for courses up to 21 credits and fail at most 3 times
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class Student extends User {
 
-    private static final long serialVersionUID = 1L;
-
     private String studentId;
     protected double gpa;
+    private int credits;
     protected int failCount;
-    private boolean researcher;
+    private List<Course> courses;
+    private List<Mark> marks;
+    private List<StudentOrganization> organizations;
 
     public Student(String id, String firstName, String lastName, String email,
                    String password, Language language, String studentId) {
         super(id, firstName, lastName, email, password, language);
         this.studentId = studentId;
         this.gpa = 0.0;
+        this.credits = 0;
         this.failCount = 0;
-        this.researcher = false;
+        this.courses = new ArrayList<>();
+        this.marks = new ArrayList<>();
+        this.organizations = new ArrayList<>();
     }
 
+    // Checks credit limit before adding course throws CourseOverloadException if exceeded
+    // Manager.approveRegistration calls this after its own pre-check
     public void registerForCourse(Course c) {
-        if (c == null || DataStorage.getInstance().isEnrolled(this, c)) return;
-        if (failCount >= 3) {
-            throw new CourseFailLimitException(
-                    "Cannot register: exceeded 3 course failures (" + failCount + ")");
-        }
-        int total = getTotalCredits() + c.getCredits();
-        if (total > 21) {
+        if (c == null || courses.contains(c)) return;
+        if (credits + c.getCredits() > 21) {
             throw new CourseOverloadException(
-                    "Cannot exceed 21 credits. Current " + getTotalCredits()
-                            + ", course " + c.getCredits());
+                    "Cannot exceed 21 credits Current " + credits + " course " + c.getCredits());
         }
-        DataStorage.getInstance().enrollStudent(this, c);
-    }
-
-    public void submitRequest(String description) {
-        if (description == null || description.isEmpty()) return;
-        Request req = new Request(UUID.randomUUID().toString(), this, description);
-        DataStorage.getInstance().addMessage(req);
-        System.out.println("[REQUEST] Submitted: " + description);
-    }
-
-    public List<Course> viewCourses() {
-        return DataStorage.getInstance().getCoursesForStudent(this);
-    }
-
-    public List<Teacher> viewTeachersForCourse(Course course) {
-        if (course == null) return new java.util.ArrayList<>();
-        return course.getTeachers();
+        courses.add(c);
+        credits += c.getCredits();
     }
 
     public List<Mark> viewMarks() {
-        return DataStorage.getInstance().getMarksForStudent(this);
+        return new ArrayList<>(marks);
     }
 
+    // Builds plain-text report called directly in Main and Teacher panel scenarios
     public String getTranscript() {
         StringBuilder sb = new StringBuilder();
         sb.append("=== Student Transcript ===\n");
         sb.append("ID: ").append(studentId).append("\n");
         sb.append("Name: ").append(firstName).append(" ").append(lastName).append("\n");
         sb.append("GPA: ").append(String.format("%.2f", gpa)).append("\n");
-        sb.append("Credits: ").append(getTotalCredits()).append("/21\n");
-        sb.append("Failures: ").append(failCount).append("/3\n");
-        for (Mark mark : viewMarks()) {
+        sb.append("Credits: ").append(credits).append("/21\n");
+        for (Mark mark : marks) {
             sb.append("  ").append(mark).append("\n");
         }
         return sb.toString();
     }
 
+    // Delegates to Teacher.addRating which recalculates the running average
     public void rateTeacher(Teacher t, int rating) {
         if (t != null && rating >= 1 && rating <= 5) {
             t.addRating(rating);
         }
     }
 
+    // Also calls org.addMember so the organization list stays consistent
     public void joinOrganization(StudentOrganization org) {
-        if (org != null) {
+        if (org != null && !organizations.contains(org)) {
+            organizations.add(org);
             org.addMember(this);
-            DataStorage.getInstance().addOrganization(org);
         }
     }
 
     public int getTotalCredits() {
-        int total = 0;
-        for (Course c : viewCourses()) {
-            total += c.getCredits();
-        }
-        return total;
+        return credits;
     }
 
     public int getFailCount() {
         return failCount;
     }
 
+    // Read by Manager.getStudentsSortedByGpa comparator
     public double getGpa() {
         return gpa;
     }
@@ -103,26 +89,22 @@ public class Student extends User {
         }
     }
 
+    // Used in getTranscript
     public String getStudentId() {
         return studentId;
     }
 
-    public boolean isResearcher() {
-        return researcher;
-    }
-
-    public void setResearcher(boolean researcher) {
-        this.researcher = researcher;
-    }
-
-    public void viewAllNews() {
-        DataStorage.getInstance().printNewsFeed(this);
+    // Called by Teacher.putMark to push Mark object into the student own list
+    public void addMark(Mark mark) {
+        if (mark != null && !marks.contains(mark)) {
+            marks.add(mark);
+        }
     }
 
     @Override
     public String toString() {
         return "Student{id='" + id + "', name='" + firstName + " " + lastName
                 + "', gpa=" + String.format("%.2f", gpa)
-                + ", credits=" + getTotalCredits() + ", fails=" + failCount + "}";
+                + ", credits=" + credits + ", fails=" + failCount + "}";
     }
 }

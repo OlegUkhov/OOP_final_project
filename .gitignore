@@ -28,3 +28,9 @@ bin/
 .idea/
 ### Mac OS ###
 .DS_Store
+
+### Project data (serialization) ###
+data/
+src/data/
+
+*.class

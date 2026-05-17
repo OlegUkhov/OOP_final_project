@@ -1,5 +1,3 @@
-// A university course with credits type teachers and lessons
-// One course can have multiple teachers: one for LECTURE and one for PRACTICE
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,63 +6,64 @@ public class Course {
 
     private String courseId;
     private String name;
-    // Checked by Student.registerForCourse() and Manager.approveRegistration() against the 21 limit
     private int credits;
-    // MAJOR MINOR or FREE_ELECTIVE
     private CourseType courseType;
+    private String major;
+    private int studyYear;
     private List<Teacher> teachers;
-    // Each Lesson has a LessonType to distinguish lectures from practices
     private List<Lesson> lessons;
 
     public Course(String courseId, String name, int credits, CourseType courseType) {
+        this(courseId, name, credits, courseType, "SITE", 2);
+    }
+
+    public Course(String courseId, String name, int credits, CourseType courseType,
+                  String major, int studyYear) {
         this.courseId = courseId;
         this.name = name;
         this.credits = credits;
         this.courseType = courseType;
+        this.major = major;
+        this.studyYear = studyYear;
         this.teachers = new ArrayList<>();
         this.lessons = new ArrayList<>();
     }
 
-    // Called by Teacher.manageCourse() to register the teacher on the course side
     public void addTeacher(Teacher t) {
-        if (t != null && !teachers.contains(t)) {
-            teachers.add(t);
-        }
+        if (t != null && !teachers.contains(t)) teachers.add(t);
     }
 
     public void addLesson(Lesson l) {
-        if (l != null && !lessons.contains(l)) {
-            lessons.add(l);
-        }
+        if (l != null && !lessons.contains(l)) lessons.add(l);
     }
 
-    public List<Lesson> getLessons() {
-        return new ArrayList<>(lessons);
+    public List<Lesson> getLessons() { return new ArrayList<>(lessons); }
+    public List<Teacher> getTeachers() { return new ArrayList<>(teachers); }
+    public String getCourseId() { return courseId; }
+    public int getCredits() { return credits; }
+    public String getName() { return name; }
+    public CourseType getCourseType() { return courseType; }
+    public String getMajor() { return major; }
+    public int getStudyYear() { return studyYear; }
+
+    public void setMajor(String major) {
+        if (major != null) this.major = major;
     }
 
-    // Read by Student.registerForCourse() and Manager.approveRegistration() for credit checks
-    public int getCredits() {
-        return credits;
-    }
-
-    // Read by Mark.toString() to show which course the mark belongs to
-    public String getName() {
-        return name;
+    public void setStudyYear(int studyYear) {
+        this.studyYear = studyYear;
     }
 
     @Override
     public String toString() {
-        return "Course{id='" + courseId + "', name='" + name + "', credits=" + credits
-                + ", type=" + courseType + ", teachers=" + teachers.size()
-                + ", lessons=" + lessons.size() + "}";
+        return "Course{id='" + courseId + "', name='" + name + "', credits=" + credits + "}";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Course)) return false;
-        Course c = (Course) o;
-        return Objects.equals(courseId, c.courseId);
+        return Objects.equals(courseId, ((Course) o).courseId);
     }
 
     @Override

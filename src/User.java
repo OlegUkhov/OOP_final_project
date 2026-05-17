@@ -1,5 +1,3 @@
-// Abstract base for every person in the system
-// Implements Observer so any user can subscribe to a Journal and receive paper notifications
 import java.util.Objects;
 
 public abstract class User implements Observer {
@@ -9,7 +7,6 @@ public abstract class User implements Observer {
     protected String lastName;
     protected String email;
     protected String password;
-    // Controls which language the UI shows for this user KZ EN RU
     protected Language language;
 
     public User(String id, String firstName, String lastName,
@@ -22,60 +19,65 @@ public abstract class User implements Observer {
         this.language = language;
     }
 
-    // Entry point for the system a real version would check credentials against DataStorage
-    public boolean login() {
-        return true;
+    public static User authenticate(String email, String password) {
+        User user = DataStorage.getInstance().findUserByEmail(email);
+        if (user != null && user.checkPassword(password)) return user;
+        return null;
+    }
+
+    public boolean checkPassword(String pwd) {
+        return password != null && password.equals(pwd);
     }
 
     public void logout() {
+        System.out.println("[AUTH] " + firstName + " logged out.");
     }
 
-    // Called by Journal.notifyObservers when a new paper is published in subscribed journal
     @Override
     public void update(ResearchPaper paper) {
         if (paper != null) {
-            System.out.println("[NOTIFICATION] " + firstName + " " + lastName
-                    + " notified new paper " + paper.getTitle());
+            System.out.println("[JOURNAL] " + firstName + " — new paper: " + paper.getTitle());
         }
     }
 
-    // Used by DataStorage.removeUser and Admin.removeUser to match by id
-    public String getId() {
-        return id;
+    public void onNewsReceived(News item) {
+        if (item != null) {
+            System.out.println("[NEWS] " + firstName + " received: " + item.getTitle()
+                    + (item.isPinned() ? " [PINNED]" : ""));
+        }
     }
 
-    // Used by toString in Message and Complaint to show the person name
-    public String getFirstName() {
-        return firstName;
-    }
+    public String getId() { return id; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getEmail() { return email; }
+    public String getPassword() { return password; }
+    public Language getLanguage() { return language; }
 
-    public String getLastName() {
-        return lastName;
-    }
-
-    public Language getLanguage() {
-        return language;
+    /** Simple UI translation: EN / KZ / RU (Lecture: enum + control flow). */
+    public String t(String en, String kz, String ru) {
+        if (language == Language.KZ) return kz;
+        if (language == Language.RU) return ru;
+        return en;
     }
 
     public void setLanguage(Language lang) {
         if (lang != null) {
             this.language = lang;
-            System.out.println("[LANGUAGE] " + firstName + " " + lastName + " switched to " + lang);
+            System.out.println(t("Language switched to: ", "Тіл өзгертілді: ", "Язык изменён: ") + lang);
         }
     }
 
     @Override
     public String toString() {
-        return firstName + " " + lastName + " [id=" + id + ", email=" + email + "]";
+        return firstName + " " + lastName + " [" + email + "]";
     }
 
-    // Equality is based on id so the same person is never stored twice in collection
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User)) return false;
-        User user = (User) o;
-        return Objects.equals(id, user.id);
+        return Objects.equals(id, ((User) o).id);
     }
 
     @Override

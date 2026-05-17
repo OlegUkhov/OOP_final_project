@@ -1,12 +1,11 @@
-// Abstract base for all university staff
-// Extends User with salary department and employee id
-// Teacher Manager Admin and TechSupportSpecialist all extend this class
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public abstract class Employee extends User {
+
+    private static final long serialVersionUID = 1L;
 
     protected String employeeId;
     protected double salary;
@@ -21,26 +20,32 @@ public abstract class Employee extends User {
         this.department = department;
     }
 
-    // Creates a Message object and saves it to DataStorage; any Employee can message any other Employee
-    // Message constructor expects two Employee references as sender and receiver
+    public String getEmployeeId() { return employeeId; }
+    public double getSalary() { return salary; }
+    public String getDepartment() { return department; }
+
     public void sendMessage(Employee receiver, String text) {
         if (receiver != null && text != null && !text.isEmpty()) {
             Message msg = new Message(
-                UUID.randomUUID().toString(),
-                this,
-                receiver,
-                text,
-                new Date()
-            );
-            // Persist message so it can be retrieved later via DataStorage.getMessages()
+                    UUID.randomUUID().toString(), this, receiver, text, new Date());
             DataStorage.getInstance().addMessage(msg);
             System.out.println("[MESSAGE] " + msg);
         }
     }
 
-    // Base implementation returns empty list; TechSupportSpecialist overrides the full version
     public List<Request> viewRequests() {
         return new ArrayList<>();
+    }
+
+    public void viewAllNews() {
+        DataStorage.getInstance().printNewsFeed(this);
+    }
+
+    public void submitRequest(String description) {
+        if (description == null || description.isEmpty()) return;
+        Request req = new Request(UUID.randomUUID().toString(), this, description);
+        DataStorage.getInstance().addMessage(req);
+        System.out.println(t("Request submitted.", "Өтініш жіберілді.", "Заявка отправлена."));
     }
 
     @Override

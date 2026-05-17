@@ -1,51 +1,51 @@
-// An internal message between two Employee objects
-// Created and printed by Employee.sendMessage(); not stored in DataStorage in this version
 import java.util.Date;
 import java.util.Objects;
 
 public class Message {
 
-    private String messageId;
-    // Set to the calling Employee in Employee.sendMessage()
-    private Employee sender;
-    private Employee receiver;
-    private String content;
-    private Date date;
+    protected String messageId;
+    protected User sender;
+    protected User receiver;
+    protected String content;
+    protected Date date;
+    protected MessageType type;
 
-    public Message(String messageId, Employee sender, Employee receiver,
-                   String content, Date date) {
+    public Message(String messageId, User sender, User receiver, String content, Date date) {
+        this(messageId, sender, receiver, content, date, MessageType.REGULAR);
+    }
+
+    protected Message(String messageId, User sender, User receiver, String content,
+                      Date date, MessageType type) {
         this.messageId = messageId;
         this.sender = sender;
         this.receiver = receiver;
         this.content = content;
-        this.date = date;
+        this.date = date != null ? date : new Date();
+        this.type = type;
     }
 
-    public String getContent() {
-        return content;
-    }
-
-    public Employee getReceiver() {
-        return receiver;
-    }
-
-    public Employee getSender() {
-        return sender;
-    }
+    public String getMessageId() { return messageId; }
+    public User getSender() { return sender; }
+    public User getReceiver() { return receiver; }
+    public String getContent() { return content; }
+    public MessageType getType() { return type; }
 
     @Override
     public String toString() {
-        return "Message{from=" + (sender != null ? sender.getFirstName() + " " + sender.getLastName() : "null")
-                + ", to=" + (receiver != null ? receiver.getFirstName() + " " + receiver.getLastName() : "null")
-                + ", content='" + content + "', date=" + date + "}";
+        return "Message{from=" + formatUser(sender) + ", to=" + formatUser(receiver)
+                + ", content='" + content + "'}";
+    }
+
+    protected String formatUser(User user) {
+        if (user == null) return "-";
+        return user.getFirstName() + " " + user.getLastName();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Message)) return false;
-        Message m = (Message) o;
-        return Objects.equals(messageId, m.messageId);
+        return Objects.equals(messageId, ((Message) o).messageId);
     }
 
     @Override

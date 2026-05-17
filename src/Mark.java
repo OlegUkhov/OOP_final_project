@@ -1,6 +1,3 @@
-// Grade record linking a Student to a Course
-// Three components: first attestation second attestation final exam
-// getTotalScore() averages them; getLetterGrade() maps the average to A-F scale
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,9 +7,7 @@ public class Mark {
     private double firstAttestation;
     private double secondAttestation;
     private double finalExam;
-    // Link to Student so the mark can display who it belongs to in toString()
     private Student student;
-    // Link to Course so the mark can display which course it covers in toString()
     private Course course;
 
     public Mark(double firstAttestation, double secondAttestation, double finalExam,
@@ -25,12 +20,27 @@ public class Mark {
         this.course = course;
     }
 
-    // Simple arithmetic mean of all three scores
+    public Mark(String markId, double firstAttestation, double secondAttestation, double finalExam,
+                Student student, Course course) {
+        this.markId = markId;
+        this.firstAttestation = firstAttestation;
+        this.secondAttestation = secondAttestation;
+        this.finalExam = finalExam;
+        this.student = student;
+        this.course = course;
+    }
+
+    public String getMarkId() { return markId; }
+    public Student getStudent() { return student; }
+    public Course getCourse() { return course; }
+    public double getFirstAttestation() { return firstAttestation; }
+    public double getSecondAttestation() { return secondAttestation; }
+    public double getFinalExam() { return finalExam; }
+
     public double getTotalScore() {
         return (firstAttestation + secondAttestation + finalExam) / 3.0;
     }
 
-    // Threshold boundaries follow a university scale
     public String getLetterGrade() {
         double score = getTotalScore();
         if (score >= 94.5) return "A";

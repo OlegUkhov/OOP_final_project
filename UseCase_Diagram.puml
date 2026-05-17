@@ -168,6 +168,11 @@ ST --> UC_JoinOrg
 ST --> UC_HeadOrg
 ST --> UC_SubmitReq
 
+note right of UC_SubmitReq
+  Request extends Message
+  (MessageType.REQUEST)
+end note
+
 UC_HeadOrg ..> UC_JoinOrg : <<extend>>
 
 ' ─────────────────────────────────────────

@@ -9,6 +9,9 @@ public class Student extends User {
     protected double gpa;
     protected int failCount;
     private boolean researcher;
+    private int studyYear;      // 1-7
+    private String faculty;     // e.g. "SITE", "Business"
+    private boolean graduated;
 
     public Student(String id, String firstName, String lastName, String email,
                    String password, Language language, String studentId) {
@@ -17,6 +20,9 @@ public class Student extends User {
         this.gpa = 0.0;
         this.failCount = 0;
         this.researcher = false;
+        this.studyYear = 1;
+        this.faculty = "";
+        this.graduated = false;
     }
 
     public void registerForCourse(Course c) {
@@ -59,6 +65,8 @@ public class Student extends User {
         sb.append("=== Student Transcript ===\n");
         sb.append("ID: ").append(studentId).append("\n");
         sb.append("Name: ").append(firstName).append(" ").append(lastName).append("\n");
+        sb.append("Faculty: ").append(faculty.isEmpty() ? "—" : faculty).append("\n");
+        sb.append("Year: ").append(studyYear).append(graduated ? " (Graduated)" : "").append("\n");
         sb.append("GPA: ").append(String.format("%.2f", gpa)).append("\n");
         sb.append("Credits: ").append(getTotalCredits()).append("/21\n");
         sb.append("Failures: ").append(failCount).append("/3\n");
@@ -89,31 +97,19 @@ public class Student extends User {
         return total;
     }
 
-    public int getFailCount() {
-        return failCount;
-    }
+    public int getFailCount()          { return failCount; }
+    public double getGpa()             { return gpa; }
+    public void setGpa(double gpa)     { if (gpa >= 0.0 && gpa <= 4.0) this.gpa = gpa; }
+    public String getStudentId()       { return studentId; }
+    public boolean isResearcher()      { return researcher; }
+    public void setResearcher(boolean r) { this.researcher = r; }
 
-    public double getGpa() {
-        return gpa;
-    }
-
-    public void setGpa(double gpa) {
-        if (gpa >= 0.0 && gpa <= 4.0) {
-            this.gpa = gpa;
-        }
-    }
-
-    public String getStudentId() {
-        return studentId;
-    }
-
-    public boolean isResearcher() {
-        return researcher;
-    }
-
-    public void setResearcher(boolean researcher) {
-        this.researcher = researcher;
-    }
+    public int getStudyYear()          { return studyYear; }
+    public void setStudyYear(int y)    { if (y >= 1 && y <= 7) this.studyYear = y; }
+    public String getFaculty()         { return faculty; }
+    public void setFaculty(String f)   { this.faculty = (f != null ? f : ""); }
+    public boolean isGraduated()       { return graduated; }
+    public void setGraduated(boolean g){ this.graduated = g; }
 
     public void viewAllNews() {
         DataStorage.getInstance().printNewsFeed(this);
@@ -122,7 +118,9 @@ public class Student extends User {
     @Override
     public String toString() {
         return "Student{id='" + id + "', name='" + firstName + " " + lastName
-                + "', gpa=" + String.format("%.2f", gpa)
-                + ", credits=" + getTotalCredits() + ", fails=" + failCount + "}";
+                + "', faculty='" + faculty + "', year=" + studyYear
+                + ", gpa=" + String.format("%.2f", gpa)
+                + ", credits=" + getTotalCredits() + ", fails=" + failCount
+                + (graduated ? ", GRADUATED" : "") + "}";
     }
 }

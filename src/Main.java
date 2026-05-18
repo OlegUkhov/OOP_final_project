@@ -4,6 +4,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Console application — all use cases from Use Case Diagram.
@@ -254,25 +257,82 @@ public class Main {
 
     private static boolean techMenu(TechSupportSpecialist ts) {
         printPanel(ts, "Tech Support", "Тех. қолдау", "Техподдержка");
-        out("1.  " + ts.t("View new requests (VIEWED)", "Жаңа өтінімдер", "Новые заявки"));
-        out("2.  " + ts.t("Accept request", "Қабылдау", "Принять"));
-        out("3.  " + ts.t("Reject request", "Қабылдамау", "Отклонить"));
-        out("4.  " + ts.t("Mark as DONE", "Орындалды", "Выполнено"));
+        out("1.  " + ts.t("Active requests", "Белсенді өтінімдер", "Активные заявки"));
+        out("2.  " + ts.t("Completed requests", "Орындалған өтінімдер", "Завершённые заявки"));
         printCommonMenu(ts);
         pr("Choice: ");
         String c = scanner.nextLine().trim();
         if (handleCommon(c, ts)) return !"0".equals(c);
 
         switch (c) {
-            case "1":
-                showPaged(ts.viewNewRequests(), ts.t("requests", "өтінімдер", "заявок"));
-                break;
-            case "2": processRequest(ts, true, false, false); break;
-            case "3": processRequest(ts, false, true, false); break;
-            case "4": processRequest(ts, false, false, true); break;
+            case "1": activeRequestsMenu(ts); break;
+            case "2": completedRequestsMenu(ts); break;
             default: out(ts.t("Unknown.", "Белгісіз.", "Неизвестно."));
         }
         return true;
+    }
+
+    private static void activeRequestsMenu(TechSupportSpecialist ts) {
+        List<Request> active = getRequestsByStatus(RequestStatus.VIEWED, RequestStatus.ACCEPTED);
+        if (active.isEmpty()) {
+            out(ts.t("No active requests.", "Өтінім жоқ.", "Активных заявок нет."));
+            return;
+        }
+        while (true) {
+            out("\n--- " + ts.t("Active requests", "Белсенді өтінімдер", "Активные заявки")
+                    + " [" + active.size() + "] ---");
+            for (int i = 0; i < active.size(); i++) {
+                Request r = active.get(i);
+                out((i + 1) + ". [" + r.getStatus() + "] " + r);
+            }
+            out("0. " + ts.t("Back", "Артқа", "Назад"));
+            int idx = readInt(ts.t("Select request: ", "Нөмір: ", "Номер: ")) - 1;
+            if (idx == -1) return;
+            if (idx < 0 || idx >= active.size()) { out(ts.t("Invalid.", "Қате.", "Неверно.")); continue; }
+
+            Request selected = active.get(idx);
+            out("\n" + selected);
+            out(ts.t("Status: ", "Күй: ", "Статус: ") + selected.getStatus());
+            out("1. " + ts.t("Accept", "Қабылдау", "Принять"));
+            out("2. " + ts.t("Reject", "Қабылдамау", "Отклонить"));
+            out("3. " + ts.t("Mark as DONE", "Орындалды", "Выполнено"));
+            out("0. " + ts.t("Back", "Артқа", "Назад"));
+            pr("Choice: ");
+            String action = scanner.nextLine().trim();
+            switch (action) {
+                case "1":
+                    ts.acceptRequest(selected);
+                    out(ts.t("Accepted. Status: ", "Қабылданды. Күй: ", "Принято. Статус: ") + selected.getStatus());
+                    break;
+                case "2":
+                    ts.rejectRequest(selected);
+                    out(ts.t("Rejected. Status: ", "Қабылданбады. Күй: ", "Отклонено. Статус: ") + selected.getStatus());
+                    active.remove(selected);
+                    break;
+                case "3":
+                    ts.markAsDone(selected);
+                    out(ts.t("Done. Status: ", "Орындалды. Күй: ", "Выполнено. Статус: ") + selected.getStatus());
+                    active.remove(selected);
+                    break;
+                case "0": break;
+                default: out(ts.t("Unknown.", "Белгісіз.", "Неизвестно."));
+            }
+        }
+    }
+
+    private static void completedRequestsMenu(TechSupportSpecialist ts) {
+        List<Request> done = getRequestsByStatus(RequestStatus.DONE, RequestStatus.REJECTED);
+        showPaged(done, ts.t("completed requests", "орындалған өтінімдер", "завершённых заявок"));
+    }
+
+    private static List<Request> getRequestsByStatus(RequestStatus... statuses) {
+        List<Request> list = new ArrayList<>();
+        for (Request r : storage.getRequests()) {
+            for (RequestStatus s : statuses) {
+                if (r.getStatus() == s) { list.add(r); break; }
+            }
+        }
+        return list;
     }
 
     // ===================== TEACHER =====================
@@ -288,6 +348,7 @@ public class Main {
         if (t.isResearcher()) printResearcherMenu(t);
         else out("--- " + t.t("(Researcher: option 20)", "(Зертгер: 20)", "(Исследователь: 20)"));
         out("20. " + t.t("Enable researcher role", "Зертгер рөлі", "Роль исследователя"));
+        out("21. " + t.t("Manage attendance (open/close)", "Посещаемость", "Управление посещаемостью"));
         printCommonMenu(t);
         pr("Choice: ");
         String c = scanner.nextLine().trim();
@@ -308,6 +369,7 @@ public class Main {
                 case "11": if (t.isResearcher()) leadProjectMenu(researcherOf(t)); else needResearcher(t); break;
                 case "12": if (t.isResearcher()) addParticipantMenu(researcherOf(t)); else needResearcher(t); break;
                 case "20": t.setResearcher(true); out(t.t("Researcher enabled.", "Қосылды.", "Включено.")); break;
+                case "21": manageAttendanceMenu(t); break;
                 default:   out(t.t("Unknown.", "Белгісіз.", "Неизвестно."));
             }
         } catch (CourseFailLimitException ex) {
@@ -330,6 +392,7 @@ public class Main {
         out("8.  " + s.t("Join organization", "Ұйымға қосылу", "Вступить в организацию"));
         out("9.  " + s.t("Become head of organization", "Төраға", "Глава организации"));
         out("10. " + s.t("Submit tech request", "Тех. өтініш", "Тех. заявка"));
+        out("11. " + s.t("Attendance (mark/view)", "Қатысу (отметить/просмотр)", "Посещаемость (отметить/просмотр)"));
         printCommonMenu(s);
         pr("Choice: ");
         String c = scanner.nextLine().trim();
@@ -341,7 +404,9 @@ public class Main {
                     showPaged(s.viewCourses(), s.t("courses", "курстар", "курсов"));
                     break;
                 case "2":
-                    showPaged(storage.getCourses(), s.t("courses", "курстар", "курсов"));
+                    List<Course> avail = new ArrayList<>();
+                    for (Course course : storage.getCourses()) if (!DataStorage.getInstance().isEnrolled(s, course)) avail.add(course);
+                    showPaged(avail, s.t("courses", "курстар", "курсов"));
                     break;
                 case "3":  registerCourseMenu(s); break;
                 case "4":  viewTeachersMenu(s); break;
@@ -353,6 +418,7 @@ public class Main {
                 case "8":  joinOrgMenu(s); break;
                 case "9":  setOrgHeadMenu(s); break;
                 case "10": s.submitRequest(readLine(s.t("Problem: ", "Мәселе: ", "Проблема: "))); break;
+                case "11": attendanceMenu(s); break;
                 default:   out(s.t("Unknown.", "Белгісіз.", "Неизвестно."));
             }
         } catch (CourseOverloadException | CourseFailLimitException ex) {
@@ -366,7 +432,16 @@ public class Main {
     private static boolean graduateMenu(GraduateStudent gs) {
         printPanel(gs, "Graduate Student", "Магистрант", "Магистрант");
         out("--- " + gs.t("Student", "Студент", "Студент") + " ---");
-        out("1-10 " + gs.t("(same as student menu)", "(студент сияқты)", "(как у студента)"));
+        out("1.  " + gs.t("My courses", "Менің курстарым", "Мои курсы"));
+        out("2.  " + gs.t("Available courses", "Қолжетімді курстар", "Доступные курсы"));
+        out("3.  " + gs.t("Register for course (max 21 cr, 3 fails)", "Тіркелу", "Регистрация"));
+        out("4.  " + gs.t("Teachers of course", "Оқытушылар", "Преподаватели курса"));
+        out("5.  " + gs.t("View marks", "Бағалар", "Оценки"));
+        out("6.  " + gs.t("View transcript", "Транскрипт", "Транскрипт"));
+        out("7.  " + gs.t("Rate teacher", "Бағалау", "Оценить преподавателя"));
+        out("8.  " + gs.t("Join organization", "Ұйымға қосылу", "Вступить в организацию"));
+        out("9.  " + gs.t("Become head of organization", "Төраға", "Глава организации"));
+        out("10. " + gs.t("Submit tech request", "Тех. өтініш", "Тех. заявка"));
         out("--- " + gs.t("Graduate", "Магистрант", "Магистрант") + " ---");
         out("11. " + gs.t("Assign supervisor (h>=3)", "Жетекші", "Научрук"));
         out("12. " + gs.t("Publish diploma paper", "Диплом", "Дипломная работа"));
@@ -408,7 +483,11 @@ public class Main {
     private static void studentAction(Student s, String c) throws CourseOverloadException, CourseFailLimitException {
         switch (c) {
             case "1":  showPaged(s.viewCourses(), "courses"); break;
-            case "2":  showPaged(storage.getCourses(), "courses"); break;
+            case "2":  {
+                List<Course> avail = new ArrayList<>();
+                for (Course course : storage.getCourses()) if (!DataStorage.getInstance().isEnrolled(s, course)) avail.add(course);
+                showPaged(avail, "courses");
+            } break;
             case "3":  registerCourseMenu(s); break;
             case "4":  viewTeachersMenu(s); break;
             case "5":  showPaged(s.viewMarks(), "marks"); break;
@@ -430,6 +509,8 @@ public class Main {
         out("93. " + u.t("View news", "Жаңалықтар", "Новости"));
         out("94. " + u.t("Publish paper to journal (notify)", "Журналға мақала", "Статья в журнал"));
         out("95. " + u.t("Logout", "Шығу", "Выйти"));
+        out("96. " + u.t("View my messages", "Менің хабарламалар", "Мои сообщения"));
+        out("97. " + u.t("Change password", "Пароль өзгерту", "Сменить пароль"));
         out("0.  " + u.t("Save & Exit", "Сақтау", "Сохранить и выйти"));
     }
 
@@ -442,6 +523,8 @@ public class Main {
                 if (u instanceof Student)   viewNewsPaged((Student) u);
                 else if (u instanceof Employee) viewNewsPaged((Employee) u);
                 return true;
+            case "96": viewMyMessages(u); return true;
+            case "97": changePasswordMenu(u); return true;
             case "94": publishToJournalMenu(); return true;
             case "95": u.logout(); currentUser = null; return true;
             case "0":  return true;
@@ -469,10 +552,35 @@ public class Main {
     // ===================== ACTION MENUS =====================
 
     private static void registerCourseMenu(Student s) {
-        Course c = pickCourse(storage.getCourses(), s.t("course", "курс", "курс"));
+        List<Course> avail = new ArrayList<>();
+        for (Course c : storage.getCourses()) {
+            if (!DataStorage.getInstance().isEnrolled(s, c)) avail.add(c);
+        }
+        if (avail.isEmpty()) { out(s.t("No available courses.", "Қолжетімді курс жоқ.", "Нет доступных курсов.")); return; }
+        Course c = pickCourse(avail, s.t("course", "курс", "курс"));
         if (c != null) {
-            s.registerForCourse(c);
-            out(s.t("Registered.", "Тіркелді.", "Зарегистрирован."));
+            List<Lesson> lessons = c.getLessons();
+            if (lessons.isEmpty()) { out("This course has no lessons."); return; }
+            out("Select lesson time:");
+            for (int i = 0; i < lessons.size(); i++) {
+                Lesson l = lessons.get(i);
+                String timeStr = (l.getDayOfWeek() != null && l.getStartTime() != null && l.getEndTime() != null)
+                        ? " (" + l.getDayOfWeek() + " " + l.getStartTime() + "-" + l.getEndTime() + ")"
+                        : "";
+                out((i+1) + ". " + l.getTopic() + timeStr);
+            }
+            String li = scanner.nextLine().trim();
+            try {
+                int idx = Integer.parseInt(li) - 1;
+                if (idx >= 0 && idx < lessons.size()) {
+                    s.registerForCourse(c, lessons.get(idx));
+                    out(s.t("Registered.", "Тіркелді.", "Зарегистрирован."));
+                } else {
+                    out("Invalid selection.");
+                }
+            } catch (Exception ex) {
+                out("Invalid input.");
+            }
         }
     }
 
@@ -498,12 +606,28 @@ public class Main {
     }
 
     private static void joinOrgMenu(Student s) {
-        pr(s.t("Organization name: ", "Атауы: ", "Название: "));
-        String name = scanner.nextLine().trim();
-        if (name.isEmpty()) { out(s.t("Name cannot be empty.", "Атауы бос.", "Название пусто.")); return; }
-        StudentOrganization org = new StudentOrganization(name);
-        s.joinOrganization(org);
-        out(s.t("Joined.", "Қосылды.", "Вступили."));
+        out("1. " + s.t("Join existing organization", "Қосылу", "Вступить в существующую организацию"));
+        out("2. " + s.t("Request new organization", "Жаңа ұйым сұрау", "Запросить создание организации"));
+        pr(s.t("Choice: ", "Таңдау: ", "Выбор: "));
+        String ch = scanner.nextLine().trim();
+        if ("1".equals(ch)) {
+            List<StudentOrganization> orgs = storage.getOrganizations();
+            if (orgs.isEmpty()) { out(s.t("No organizations.", "Ұйым жоқ.", "Нет организаций.")); return; }
+            out("--- Organizations ---");
+            for (int i = 0; i < orgs.size(); i++) out((i+1) + ". " + orgs.get(i).getName());
+            int idx = readInt(s.t("Select (0=cancel): ", "Таңдау: ", "Выбор: ")) - 1;
+            if (idx == -1) return;
+            if (idx >= 0 && idx < orgs.size()) { s.joinOrganization(orgs.get(idx)); out(s.t("Joined.", "Қосылды.", "Вступили.")); }
+            else out(s.t("Invalid selection.", "Қате.", "Неверно."));
+        } else if ("2".equals(ch)) {
+            pr(s.t("Organization name: ", "Атауы: ", "Название: "));
+            String name = scanner.nextLine().trim();
+            if (name.isEmpty()) { out(s.t("Name cannot be empty.", "Атауы бос.", "Название пусто.")); return; }
+            s.submitRequest("Create organization: " + name);
+            out(s.t("Creation request submitted.", "Өтініш жіберілді.", "Запрос создан."));
+        } else {
+            out(s.t("Unknown.", "Белгісіз.", "Неизвестно."));
+        }
     }
 
     private static void setOrgHeadMenu(Student s) {
@@ -600,9 +724,86 @@ public class Main {
         if (topic.isEmpty()) { out("Topic cannot be empty."); return; }
         out("1.LECTURE  2.PRACTICE");
         LessonType lt = "2".equals(scanner.nextLine().trim()) ? LessonType.PRACTICE : LessonType.LECTURE;
-        c.addLesson(new Lesson("L" + System.currentTimeMillis(), topic, lt));
+        out("Add schedule for this lesson? 1.Yes  2.No");
+        String sched = scanner.nextLine().trim();
+        if ("1".equals(sched)) {
+            try {
+                out("Select day: 1.Mon 2.Tue 3.Wed 4.Thu 5.Fri 6.Sat 7.Sun");
+                int d = Integer.parseInt(scanner.nextLine().trim());
+                DayOfWeek day = DayOfWeek.of(Math.max(1, Math.min(7, d)));
+                out("Start time (HH:mm): ");
+                LocalTime st = LocalTime.parse(scanner.nextLine().trim());
+                out("End time (HH:mm): ");
+                LocalTime et = LocalTime.parse(scanner.nextLine().trim());
+                c.addLesson(new Lesson("L" + System.currentTimeMillis(), topic, lt, day, st, et));
+            } catch (Exception ex) {
+                out("Invalid schedule input — lesson created without schedule.");
+                c.addLesson(new Lesson("L" + System.currentTimeMillis(), topic, lt));
+            }
+        } else {
+            c.addLesson(new Lesson("L" + System.currentTimeMillis(), topic, lt));
+        }
         storage.addCourse(c);
         out("Lesson added.");
+    }
+
+    private static void manageAttendanceMenu(Teacher t) {
+        List<Course> courses = t.viewCourses();
+        if (courses.isEmpty()) { out("No courses."); return; }
+        Course c = pickCourse(courses, "course");
+        if (c == null) return;
+        List<Lesson> lessons = c.getLessons();
+        if (lessons.isEmpty()) { out("No lessons for this course."); return; }
+        out("Select lesson to manage attendance:");
+        for (int i = 0; i < lessons.size(); i++) {
+            out((i+1) + ". " + lessons.get(i));
+        }
+        int li = Integer.parseInt(scanner.nextLine().trim());
+        if (li < 1 || li > lessons.size()) { out("Invalid selection."); return; }
+        Lesson lesson = lessons.get(li-1);
+        DataStorage ds = DataStorage.getInstance();
+        out("1. Open attendance  2. Close attendance  3. View attendance for this lesson");
+        String ch = scanner.nextLine().trim();
+        if ("1".equals(ch)) { ds.openAttendance(c.getCourseId(), lesson.getLessonId()); out("Attendance opened for " + c.getCourseId() + " / " + lesson.getLessonId()); }
+        else if ("2".equals(ch)) { ds.closeAttendance(c.getCourseId(), lesson.getLessonId()); out("Attendance closed for " + c.getCourseId() + " / " + lesson.getLessonId()); }
+        else if ("3".equals(ch)) {
+            List<Attendance> list = ds.getAttendancesForSession(c.getCourseId(), lesson.getLessonId());
+            if (list.isEmpty()) { out("No attendance records for this lesson."); return; }
+            for (Attendance a : list) outObj(a);
+        } else out("Unknown.");
+    }
+
+    private static void attendanceMenu(Student s) {
+        out("1. Mark attendance  2. View my attendance");
+        String ch = scanner.nextLine().trim();
+        if ("1".equals(ch)) {
+            List<Course> courses = s.viewCourses();
+            if (courses.isEmpty()) { out(s.t("No courses.", "Курс жоқ.", "Нет курсов.")); return; }
+            Course c = pickCourse(courses, s.t("course", "курс", "курс"));
+            if (c == null) return;
+            // Student.markAttendance will validate schedule and whether attendance is opened for the specific lesson
+            out("1. Present  0. Cancel");
+            String p = scanner.nextLine().trim();
+            if ("1".equals(p)) {
+                s.markAttendance(c, true);
+            } else {
+                out("Cancelled.");
+            }
+        } else if ("2".equals(ch)) {
+            List<Attendance> list = s.viewAttendanceList();
+            if (list.isEmpty()) { out(s.t("No attendance records.", "Жазба жоқ.", "Нет записей.")); return; }
+            out(s.t("Unsorted list:", "Тізім:", "Список:"));
+            for (Attendance a : list) outObj(a);
+            out(s.t("Sort after viewing? 1.Status 2.Date 0.No", "Сұрыптау? 1.Күй 2.Күні 0.Жоқ", "Сортировать? 1.Статус 2.Дата 0.Нет"));
+            String so = scanner.nextLine().trim();
+            if ("1".equals(so)) {
+                list.sort((a,b) -> Boolean.compare(b.isPresent(), a.isPresent()));
+            } else if ("2".equals(so)) {
+                list.sort((a,b) -> a.getDate().compareTo(b.getDate()));
+            } else return;
+            out(s.t("Sorted list:", "Сұрыпталған:", "Отсортировано:"));
+            for (Attendance a : list) outObj(a);
+        } else out(s.t("Unknown.", "Белгісіз.", "Неизвестно."));
     }
 
     private static void putMarkMenu(Teacher t) {
@@ -698,12 +899,38 @@ public class Main {
 
     private static void publishToJournalMenu() {
         List<Journal> journals = storage.getJournals();
-        if (journals.isEmpty()) { out("No journals in system."); return; }
-        Journal j = journals.get(0);
+        if (journals == null) journals = new ArrayList<>();
+        out("--- Journals ---");
+        for (int i = 0; i < journals.size(); i++) out((i + 1) + ". " + journals.get(i).getName());
+        out((journals.size() + 1) + ". Create new journal");
+        pr("Select journal (0=cancel): ");
+        int choice = readInt("");
+        if (choice == 0) return;
+        Journal j = null;
+        if (choice == journals.size() + 1) {
+            pr("New journal name: ");
+            String name = scanner.nextLine().trim();
+            if (name.isEmpty()) { out("Name cannot be empty."); return; }
+            j = new Journal(name);
+            storage.addJournal(j);
+        } else if (choice >= 1 && choice <= journals.size()) {
+            j = journals.get(choice - 1);
+        } else {
+            out("Invalid selection.");
+            return;
+        }
         pr("Paper title for journal: ");
         String title = scanner.nextLine().trim();
         if (title.isEmpty()) { out("Title cannot be empty."); return; }
-        ResearchPaper p = new ResearchPaper(title, j.getName(), 15, new Date());
+        pr("Pages (enter for default 15): ");
+        String ps = scanner.nextLine().trim();
+        int pages = 15;
+        try { if (!ps.isEmpty()) pages = Integer.parseInt(ps); } catch (NumberFormatException ignored) {}
+        ResearchPaper p = new ResearchPaper(title, j.getName(), pages, new Date());
+        if (currentUser != null) {
+            p.addAuthor(currentUser.getFirstName() + " " + currentUser.getLastName());
+            p.setOwnerId(currentUser.getId());
+        }
         j.publishPaper(p);
         out("Published — subscribers notified (Observer).");
     }
@@ -716,25 +943,6 @@ public class Main {
         else if ("3".equals(ch)) comp = new LengthComparator();
         if (r != null) r.printPapers(comp);
         else storage.printAllResearchersPapers(comp);
-    }
-
-    private static void processRequest(TechSupportSpecialist ts, boolean accept, boolean reject, boolean done) {
-        List<Request> pool = done ? allAcceptedRequests() : ts.viewNewRequests();
-        if (pool.isEmpty()) { out("No matching requests."); return; }
-        Request r = pickRequest(pool);
-        if (r == null) return;
-        if (accept) ts.acceptRequest(r);
-        else if (reject) ts.rejectRequest(r);
-        else if (done) ts.markAsDone(r);
-        out("Status: " + r.getStatus());
-    }
-
-    private static List<Request> allAcceptedRequests() {
-        List<Request> list = new ArrayList<>();
-        for (Request r : storage.getRequests()) {
-            if (r.getStatus() == RequestStatus.ACCEPTED) list.add(r);
-        }
-        return list;
     }
 
     // ===================== NEWS (paged) =====================
@@ -779,6 +987,31 @@ public class Main {
             if (!"1".equals(ch)) break;
             from = to;
         }
+    }
+
+    private static void viewMyMessages(User u) {
+        List<Message> msgs = DataStorage.getInstance().getMessages();
+        List<Message> mine = new ArrayList<>();
+        for (Message m : msgs) {
+            if (m.getReceiver() != null && m.getReceiver().equals(u)) mine.add(m);
+        }
+        if (mine.isEmpty()) { out(u.t("No messages.", "Хабарлама жоқ.", "Сообщений нет.")); return; }
+        showPaged(mine, "messages");
+    }
+
+    private static void changePasswordMenu(User u) {
+        pr(u.t("Current password: ", "Ағымдағы пароль: ", "Текущий пароль: "));
+        String cur = scanner.nextLine().trim();
+        if (!u.checkPassword(cur)) { out(u.t("Incorrect current password.", "Қате пароль.", "Неверный пароль.")); return; }
+        pr(u.t("New password: ", "Жаңа пароль: ", "Новый пароль: "));
+        String np1 = scanner.nextLine().trim();
+        if (np1.isEmpty()) { out(u.t("Password cannot be empty.", "Пароль бос болмауы тиіс.", "Пароль не может быть пустым.")); return; }
+        pr(u.t("Confirm new password: ", "Қайта енгізу: ", "Подтвердите пароль: "));
+        String np2 = scanner.nextLine().trim();
+        if (!np1.equals(np2)) { out(u.t("Passwords do not match.", "Пароль сәйкес емес.", "Пароли не совпадают.")); return; }
+        u.password = np1;
+        DataStorage.getInstance().addLog(new Log(java.util.UUID.randomUUID().toString(), u.getId(), "Password changed by user", new java.util.Date()));
+        out(u.t("Password changed.", "Пароль өзгертілді.", "Пароль изменён."));
     }
 
     // ===================== ADMIN HELPERS =====================
@@ -826,6 +1059,13 @@ public class Main {
         String email = scanner.nextLine().trim();
         if (!email.isEmpty()) {
             out("Email update stored on next save for id " + u.getId());
+        }
+        pr("New password (empty=skip): ");
+        String np = scanner.nextLine().trim();
+        if (!np.isEmpty()) {
+            u.password = np;
+            out("Password updated for id " + u.getId());
+            DataStorage.getInstance().addLog(new Log(java.util.UUID.randomUUID().toString(), a.getId(), "Admin set new password for user " + u.getId(), new java.util.Date()));
         }
         a.updateUser(u);
         out("User updated (logged).");
@@ -980,40 +1220,40 @@ public class Main {
     // ===================== SAMPLE DATA =====================
 
     private static void initSampleData() {
-        Admin admin = new Admin("ADM001", "Alice", "Johnson", "admin@uni.edu", "admin",
+        Admin admin = new Admin("ADM001", "Alice", "Johnson", "admin@kbtu.kz", "admin",
                 Language.EN, "EMP001", 60000, "Administration");
         storage.addUser(admin);
 
-        Teacher professor = new Teacher("TCH001", "Bob", "Smith", "teacher@uni.edu", "teacher",
+        Teacher professor = new Teacher("TCH001", "Bob", "Smith", "teacher@kbtu.kz", "teacher",
                 Language.EN, "EMP002", 70000, "Computer Science", TeacherPosition.PROFESSOR);
         storage.addUser(professor);
 
-        Manager manager = new Manager("MGR001", "Charlie", "Brown", "manager@uni.edu", "manager",
+        Manager manager = new Manager("MGR001", "Charlie", "Brown", "manager@kbtu.kz", "manager",
                 Language.EN, "EMP003", 55000, "Academic Affairs", ManagerType.DEPARTMENT);
         storage.addUser(manager);
 
-        Student student = new Student("STU001", "David", "Wilson", "student@uni.edu", "student",
+        Student student = new Student("STU001", "David", "Wilson", "student@kbtu.kz", "student",
                 Language.EN, "STU001");
         student.setGpa(3.85);
         student.setFaculty("SITE");
         student.setStudyYear(2);
         storage.addUser(student);
 
-        Student student2 = new Student("STU003", "Anna", "Lee", "anna@uni.edu", "anna",
+        Student student2 = new Student("STU003", "Anna", "Lee", "anna@kbtu.kz", "anna",
                 Language.EN, "STU003");
         student2.setGpa(3.50);
         student2.setFaculty("Business");
         student2.setStudyYear(3);
         storage.addUser(student2);
 
-        Student student3 = new Student("STU004", "Mark", "Taylor", "mark@uni.edu", "mark",
+        Student student3 = new Student("STU004", "Mark", "Taylor", "mark@kbtu.kz", "mark",
                 Language.EN, "STU004");
         student3.setGpa(2.90);
         student3.setFaculty("SITE");
         student3.setStudyYear(1);
         storage.addUser(student3);
 
-        Student student4 = new Student("STU005", "Sara", "Khan", "sara@uni.edu", "sara",
+        Student student4 = new Student("STU005", "Sara", "Khan", "sara@kbtu.kz", "sara",
                 Language.EN, "STU005");
         student4.setGpa(3.70);
         student4.setFaculty("Law");
@@ -1021,7 +1261,7 @@ public class Main {
         student4.setGraduated(true);
         storage.addUser(student4);
 
-        GraduateStudent graduate = new GraduateStudent("STU002", "Emma", "Davis", "graduate@uni.edu",
+        GraduateStudent graduate = new GraduateStudent("STU002", "Emma", "Davis", "graduate@kbtu.kz",
                 "graduate", Language.EN, "STU002");
         graduate.setGpa(3.95);
         graduate.setFaculty("SITE");
@@ -1029,12 +1269,13 @@ public class Main {
         storage.addUser(graduate);
 
         TechSupportSpecialist tech = new TechSupportSpecialist("TEC001", "Frank", "Miller",
-                "tech@uni.edu", "tech", Language.EN, "EMP004", 40000, "IT");
+            "tech@kbtu.kz", "tech", Language.EN, "EMP004", 40000, "IT");
         storage.addUser(tech);
 
         Course javaCourse = new Course("CMP101", "Advanced Java", 3, CourseType.MAJOR, "SITE", 2);
-        javaCourse.addLesson(new Lesson("L01", "OOP", LessonType.LECTURE));
-        javaCourse.addLesson(new Lesson("L02", "Patterns", LessonType.PRACTICE));
+        DayOfWeek today = LocalDate.now().getDayOfWeek();
+        javaCourse.addLesson(new Lesson("L01", "OOP", LessonType.LECTURE, today, LocalTime.of(10, 0), LocalTime.of(11, 30)));
+        javaCourse.addLesson(new Lesson("L02", "Patterns", LessonType.PRACTICE, today, LocalTime.of(14, 0), LocalTime.of(15, 30)));
         professor.manageCourse(javaCourse);
         storage.addCourse(javaCourse);
 
@@ -1046,8 +1287,12 @@ public class Main {
         professor.putMark(student, javaCourse, new Mark(95, 92, 98, student, javaCourse));
 
         TeacherResearcher resProf = new TeacherResearcher(professor);
+        String[] journals = new String[] {"IEEE", "ACM", "Springer", "Elsevier"};
         for (int i = 0; i < 15; i++) {
-            ResearchPaper p = new ResearchPaper("ML Paper " + (i + 1), "IEEE", 20, new Date());
+            int pages = 5 + (i % 12); // vary pages
+            String journalName = journals[i % journals.length];
+            Date pubDate = new Date(System.currentTimeMillis() - (long) i * 30L * 24L * 60L * 60L * 1000L);
+            ResearchPaper p = new ResearchPaper("ML Paper " + (i + 1), journalName, pages, pubDate);
             p.addAuthor("Bob Smith");
             for (int j = 0; j <= i; j++) p.addCitation();
             resProf.publishPaper(p);
@@ -1071,15 +1316,15 @@ public class Main {
         storage.addLog(new Log(UUID.randomUUID().toString(), "ADM001", "System initialized", new Date()));
 
         out("\n--- Sample accounts ---");
-        out("  admin@uni.edu     / admin");
-        out("  teacher@uni.edu   / teacher  (Professor, researcher)");
-        out("  manager@uni.edu   / manager");
-        out("  student@uni.edu   / student  (SITE, year 2)");
-        out("  graduate@uni.edu  / graduate (SITE, year 5, researcher)");
-        out("  tech@uni.edu      / tech");
-        out("  anna@uni.edu      / anna     (Business, year 3)");
-        out("  mark@uni.edu      / mark     (SITE, year 1)");
-        out("  sara@uni.edu      / sara     (Law, year 4, graduated)");
+        out("  admin@kbtu.kz     / admin");
+        out("  teacher@kbtu.kz   / teacher  (Professor, researcher)");
+        out("  manager@kbtu.kz   / manager");
+        out("  student@kbtu.kz   / student  (SITE, year 2)");
+        out("  graduate@kbtu.kz  / graduate (SITE, year 5, researcher)");
+        out("  tech@kbtu.kz      / tech");
+        out("  anna@kbtu.kz      / anna     (Business, year 3)");
+        out("  mark@kbtu.kz      / mark     (SITE, year 1)");
+        out("  sara@kbtu.kz      / sara     (Law, year 4, graduated)");
     }
 
     // ===================== UTIL =====================

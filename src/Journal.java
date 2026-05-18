@@ -37,7 +37,17 @@ public class Journal implements Observable {
 
     @Override
     public void notifyObservers(ResearchPaper paper) {
-        for (Observer obs : subscribers) obs.update(paper);
+        for (Observer obs : subscribers) {
+            obs.update(paper);
+            if (obs instanceof User) {
+                User u = (User) obs;
+                User sender = null;
+                if (paper.getOwnerId() != null) sender = DataStorage.getInstance().findUserById(paper.getOwnerId());
+                Message m = new Message(java.util.UUID.randomUUID().toString(), sender, u,
+                        "[JOURNAL] " + name + " — new paper: " + paper.getTitle(), new java.util.Date());
+                DataStorage.getInstance().addMessage(m);
+            }
+        }
     }
 
     public List<Observer> getSubscribers() {

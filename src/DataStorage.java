@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 
 public class DataStorage {
 
@@ -23,6 +25,9 @@ public class DataStorage {
     private List<News> news;
     private List<Message> messages;
     private List<Complaint> complaints;
+    private List<Attendance> attendances;
+    // track open attendance sessions as "courseId|lessonId"
+    private List<String> openAttendanceSessions;
     private List<StudentOrganization> organizations;
     private List<String> diplomaPaperIds;
 
@@ -38,6 +43,8 @@ public class DataStorage {
         news = new ArrayList<>();
         messages = new ArrayList<>();
         complaints = new ArrayList<>();
+        attendances = new ArrayList<>();
+        openAttendanceSessions = new ArrayList<>();
         organizations = new ArrayList<>();
         diplomaPaperIds = new ArrayList<>();
     }
@@ -127,15 +134,52 @@ public class DataStorage {
         return result;
     }
 
-    public void enrollStudent(Student student, Course course) {
-        if (student == null || course == null) return;
-        Enrollment e = new Enrollment(student.getId(), course.getCourseId());
+    public void enrollStudent(Student student, Course course, Lesson lesson) {
+        if (student == null || course == null || lesson == null) return;
+        // Check for schedule conflicts with already enrolled courses
+        for (Enrollment en : enrollments) {
+            if (!en.getStudentId().equals(student.getId())) continue;
+            Course existing = findCourseById(en.getCourseId());
+            if (existing == null) continue;
+            // Find the lesson for this enrollment
+            Lesson existingLesson = null;
+            for (Lesson l : existing.getLessons()) {
+                if (l.getLessonId().equals(en.getLessonId())) {
+                    existingLesson = l;
+                    break;
+                }
+            }
+            if (existingLesson == null) continue;
+            // Check time overlap
+            if (lesson.getDayOfWeek() != null && lesson.getStartTime() != null && lesson.getEndTime() != null
+                    && existingLesson.getDayOfWeek() != null && existingLesson.getStartTime() != null && existingLesson.getEndTime() != null) {
+                if (lesson.getDayOfWeek() == existingLesson.getDayOfWeek()) {
+                    if (!lesson.getEndTime().isBefore(existingLesson.getStartTime()) && !existingLesson.getEndTime().isBefore(lesson.getStartTime())) {
+                        System.out.println("Schedule conflict: cannot enroll student " + student.getId()
+                                + " into course " + course.getCourseId() + " on this time because it overlaps with " + existing.getCourseId());
+                        return;
+                    }
+                }
+            }
+        }
+        Enrollment e = new Enrollment(student.getId(), course.getCourseId(), lesson.getLessonId());
         if (!enrollments.contains(e)) enrollments.add(e);
     }
 
     public boolean isEnrolled(Student student, Course course) {
         if (student == null || course == null) return false;
-        return enrollments.contains(new Enrollment(student.getId(), course.getCourseId()));
+        // Check if student is enrolled in ANY lesson of this course
+        for (Enrollment e : enrollments) {
+            if (e.getStudentId().equals(student.getId()) && e.getCourseId().equals(course.getCourseId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isEnrolledForLesson(Student student, Course course, Lesson lesson) {
+        if (student == null || course == null || lesson == null) return false;
+        return enrollments.contains(new Enrollment(student.getId(), course.getCourseId(), lesson.getLessonId()));
     }
 
     public List<Enrollment> getEnrollments() {
@@ -249,6 +293,49 @@ public class DataStorage {
 
     public void addMessage(Message message) {
         if (message != null && !messages.contains(message)) messages.add(message);
+    }
+
+    public void addAttendance(Attendance a) {
+        if (a != null) attendances.add(a);
+    }
+
+    public java.util.List<Attendance> getAttendancesForCourse(String courseId) {
+        java.util.List<Attendance> res = new java.util.ArrayList<>();
+        if (courseId == null) return res;
+        for (Attendance a : attendances) if (courseId.equals(a.getCourseId())) res.add(a);
+        return res;
+    }
+
+    public java.util.List<Attendance> getAttendancesForStudent(String studentId) {
+        java.util.List<Attendance> res = new java.util.ArrayList<>();
+        if (studentId == null) return res;
+        for (Attendance a : attendances) if (studentId.equals(a.getStudentId())) res.add(a);
+        return res;
+    }
+
+    public java.util.List<Attendance> getAttendancesForSession(String courseId, String lessonId) {
+        java.util.List<Attendance> res = new java.util.ArrayList<>();
+        if (courseId == null || lessonId == null) return res;
+        for (Attendance a : attendances) if (courseId.equals(a.getCourseId()) && lessonId.equals(a.getLessonId())) res.add(a);
+        return res;
+    }
+
+    public void openAttendance(String courseId, String lessonId) {
+        if (courseId == null || lessonId == null) return;
+        String key = courseId + "|" + lessonId;
+        if (!openAttendanceSessions.contains(key)) openAttendanceSessions.add(key);
+    }
+
+    public void closeAttendance(String courseId, String lessonId) {
+        if (courseId == null || lessonId == null) return;
+        String key = courseId + "|" + lessonId;
+        openAttendanceSessions.remove(key);
+    }
+
+    public boolean isAttendanceOpen(String courseId, String lessonId) {
+        if (courseId == null || lessonId == null) return false;
+        String key = courseId + "|" + lessonId;
+        return openAttendanceSessions.contains(key);
     }
 
     public List<Message> getMessages() {
@@ -514,8 +601,11 @@ public class DataStorage {
         PrintWriter pw = new PrintWriter(DATA_DIR + "/lessons.txt");
         for (Course c : courses) {
             for (Lesson l : c.getLessons()) {
+                String day = l.getDayOfWeek() == null ? "" : l.getDayOfWeek().toString();
+                String st = l.getStartTime() == null ? "" : l.getStartTime().toString();
+                String et = l.getEndTime() == null ? "" : l.getEndTime().toString();
                 pw.println(esc(c.getCourseId()) + ";" + esc(l.getLessonId()) + ";"
-                        + esc(l.getTopic()) + ";" + l.getLessonType());
+                        + esc(l.getTopic()) + ";" + l.getLessonType() + ";" + day + ";" + st + ";" + et);
             }
         }
         pw.close();
@@ -531,7 +621,18 @@ public class DataStorage {
             String[] p = line.split(";");
             Course c = findCourseById(p[0]);
             if (c != null) {
-                c.addLesson(new Lesson(p[1], p[2], LessonType.valueOf(p[3])));
+                if (p.length > 6 && p[4] != null && !p[4].isEmpty()) {
+                    try {
+                        DayOfWeek d = DayOfWeek.valueOf(p[4]);
+                        LocalTime st = p[5].isEmpty() ? null : LocalTime.parse(p[5]);
+                        LocalTime et = p[6].isEmpty() ? null : LocalTime.parse(p[6]);
+                        c.addLesson(new Lesson(p[1], p[2], LessonType.valueOf(p[3]), d, st, et));
+                    } catch (Exception ex) {
+                        c.addLesson(new Lesson(p[1], p[2], LessonType.valueOf(p[3])));
+                    }
+                } else {
+                    c.addLesson(new Lesson(p[1], p[2], LessonType.valueOf(p[3])));
+                }
             }
         }
         sc.close();
@@ -540,7 +641,7 @@ public class DataStorage {
     private void saveEnrollments() throws FileNotFoundException {
         PrintWriter pw = new PrintWriter(DATA_DIR + "/enrollments.txt");
         for (Enrollment e : enrollments) {
-            pw.println(e.getStudentId() + ";" + e.getCourseId());
+            pw.println(e.getStudentId() + ";" + e.getCourseId() + ";" + (e.getLessonId() == null ? "" : e.getLessonId()));
         }
         pw.close();
     }
@@ -554,7 +655,10 @@ public class DataStorage {
             String line = sc.nextLine().trim();
             if (line.isEmpty()) continue;
             String[] p = line.split(";");
-            list.add(new Enrollment(p[0], p[1]));
+            String studentId = p.length > 0 ? p[0] : "";
+            String courseId = p.length > 1 ? p[1] : "";
+            String lessonId = p.length > 2 ? p[2] : "";
+            list.add(new Enrollment(studentId, courseId, lessonId));
         }
         sc.close();
         return list;

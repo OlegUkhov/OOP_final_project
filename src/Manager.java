@@ -22,8 +22,10 @@ public class Manager extends Employee {
     }
 
     public void approveRegistration(Student student, Course course) {
-        if (student != null && course != null) student.registerForCourse(course);
+        if (student != null && course != null && !course.getLessons().isEmpty())
+            student.registerForCourse(course, course.getLessons().get(0));
     }
+
 
     public void addCourseForRegistration(Course course, String major, int studyYear) {
         if (course != null) {

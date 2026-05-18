@@ -1,5 +1,8 @@
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
 
 public class Student extends User {
 
@@ -25,8 +28,8 @@ public class Student extends User {
         this.graduated = false;
     }
 
-    public void registerForCourse(Course c) {
-        if (c == null || DataStorage.getInstance().isEnrolled(this, c)) return;
+    public void registerForCourse(Course c, Lesson lesson) {
+        if (c == null || lesson == null || DataStorage.getInstance().isEnrolledForLesson(this, c, lesson)) return;
         if (failCount >= 3) {
             throw new CourseFailLimitException(
                     "Cannot register: exceeded 3 course failures (" + failCount + ")");
@@ -37,7 +40,7 @@ public class Student extends User {
                     "Cannot exceed 21 credits. Current " + getTotalCredits()
                             + ", course " + c.getCredits());
         }
-        DataStorage.getInstance().enrollStudent(this, c);
+        DataStorage.getInstance().enrollStudent(this, c, lesson);
     }
 
     public void submitRequest(String description) {
@@ -87,6 +90,29 @@ public class Student extends User {
             org.addMember(this);
             DataStorage.getInstance().addOrganization(org);
         }
+    }
+
+    public void markAttendance(Course c, boolean present) {
+        if (c == null) return;
+        DataStorage ds = DataStorage.getInstance();
+        Lesson matching = null;
+        for (Lesson lesson : c.getLessons()) {
+            if (ds.isAttendanceOpen(c.getCourseId(), lesson.getLessonId())) {
+                matching = lesson;
+                break;
+            }
+        }
+        if (matching == null) {
+            System.out.println("Attendance is not open for any lesson of this course.");
+            return;
+        }
+        Attendance a = new Attendance(java.util.UUID.randomUUID().toString(), c.getCourseId(), matching.getLessonId(), this.getId(), new java.util.Date(), present);
+        ds.addAttendance(a);
+        System.out.println("Attendance recorded: " + (present ? "present" : "absent") + " for " + c.getCourseId());
+    }
+
+    public java.util.List<Attendance> viewAttendanceList() {
+        return DataStorage.getInstance().getAttendancesForStudent(this.getId());
     }
 
     public int getTotalCredits() {

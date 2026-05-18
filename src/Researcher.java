@@ -1,10 +1,11 @@
 // Researcher role interface - implemented via Decorator pattern
 // TeacherResearcher and StudentResearcher both implement this through ResearcherDecorator
 // GraduateStudent.setSupervisor() requires a Researcher reference with h-index >= 3
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 
-public interface Researcher {
+public interface Researcher extends Serializable {
 
     // Adds the paper to the internal papers list in ResearcherDecorator
     void publishPaper(ResearchPaper p);

@@ -92,6 +92,10 @@ public class Teacher extends Employee {
         this.researcher = researcher;
     }
 
+    public String generateMarksReport() {
+        return DataStorage.getInstance().generateMarksReportForTeacher(this);
+    }
+
     @Override
     public String toString() {
         return "Teacher{id='" + id + "', name='" + firstName + " " + lastName

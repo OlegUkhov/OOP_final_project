@@ -1,10 +1,13 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class News {
+public class News implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String newsId;
     private String title;
@@ -24,17 +27,30 @@ public class News {
         this.comments = new ArrayList<>();
     }
 
+    public void publish() {
+        DataStorage.getInstance().publishNews(this);
+    }
+
     public void addComment(String comment) {
         if (comment != null && !comment.isEmpty()) comments.add(comment);
     }
 
+    public void addComment(User user, String comment) {
+        if (comment == null || comment.isEmpty()) return;
+        String author = user == null ? "Anonymous" : user.getFirstName() + " " + user.getLastName();
+        comments.add(author + ": " + comment);
+    }
+
     public void pin() { this.isPinned = true; }
+
+    public void unpin() { this.isPinned = false; }
 
     public String getNewsId() { return newsId; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
     public String getTopic() { return topic; }
     public boolean isPinned() { return isPinned; }
+    public Date getDate() { return date; }
 
     public List<String> getComments() { return new ArrayList<>(comments); }
 

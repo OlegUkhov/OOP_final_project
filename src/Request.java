@@ -2,6 +2,8 @@ import java.util.Date;
 
 public class Request extends Message {
 
+    private static final long serialVersionUID = 1L;
+
     private RequestStatus status;
 
     public Request(String messageId, User sender, String description) {

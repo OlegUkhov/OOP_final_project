@@ -1,7 +1,10 @@
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-public class Mark {
+public class Mark implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String markId;
     private double firstAttestation;

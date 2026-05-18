@@ -1,3 +1,11 @@
+import java.util.regex.PatternSyntaxException;
+import java.util.regex.Pattern;
+import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -9,9 +17,11 @@ import java.util.Scanner;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-public class DataStorage {
+public class DataStorage implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private static final String DATA_DIR = "data";
+    private static final String DATA_FILE = DATA_DIR + "/storage.ser";
     private static DataStorage instance;
 
     private List<User> users;
@@ -406,9 +416,152 @@ public class DataStorage {
         for (ResearchPaper p : all) System.out.println(p);
     }
 
-    // ---------- save / load (PrintWriter & Scanner — Lecture 10-11) ----------
+
+    private void copyFrom(DataStorage other) {
+        if (other == null) return;
+        this.users = other.users != null ? other.users : new ArrayList<>();
+        this.courses = other.courses != null ? other.courses : new ArrayList<>();
+        this.enrollments = other.enrollments != null ? other.enrollments : new ArrayList<>();
+        this.marks = other.marks != null ? other.marks : new ArrayList<>();
+        this.papers = other.papers != null ? other.papers : new ArrayList<>();
+        this.projects = other.projects != null ? other.projects : new ArrayList<>();
+        this.journals = other.journals != null ? other.journals : new ArrayList<>();
+        this.logs = other.logs != null ? other.logs : new ArrayList<>();
+        this.news = other.news != null ? other.news : new ArrayList<>();
+        this.messages = other.messages != null ? other.messages : new ArrayList<>();
+        this.complaints = other.complaints != null ? other.complaints : new ArrayList<>();
+        this.attendances = other.attendances != null ? other.attendances : new ArrayList<>();
+        this.openAttendanceSessions = other.openAttendanceSessions != null ? other.openAttendanceSessions : new ArrayList<>();
+        this.organizations = other.organizations != null ? other.organizations : new ArrayList<>();
+        this.diplomaPaperIds = other.diplomaPaperIds != null ? other.diplomaPaperIds : new ArrayList<>();
+    }
+
+    public User authenticate(String email, String password) {
+        User user = findUserByEmail(email);
+        if (user != null && user.checkPassword(password)) return user;
+        return null;
+    }
+
+    public List<User> searchUsersByRegex(String regex) {
+        List<User> result = new ArrayList<>();
+        if (regex == null || regex.isEmpty()) return result;
+        try {
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            for (User u : users) {
+                String text = u.getId() + " " + u.getFirstName() + " " + u.getLastName() + " " + u.getEmail();
+                if (pattern.matcher(text).find()) result.add(u);
+            }
+        } catch (PatternSyntaxException e) {
+            System.out.println("Wrong regex: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public List<Course> searchCoursesByRegex(String regex) {
+        List<Course> result = new ArrayList<>();
+        if (regex == null || regex.isEmpty()) return result;
+        try {
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            for (Course c : courses) {
+                String text = c.getCourseId() + " " + c.getName() + " " + c.getMajor() + " " + c.getCourseType();
+                if (pattern.matcher(text).find()) result.add(c);
+            }
+        } catch (PatternSyntaxException e) {
+            System.out.println("Wrong regex: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public List<News> searchNewsByRegex(String regex) {
+        List<News> result = new ArrayList<>();
+        if (regex == null || regex.isEmpty()) return result;
+        try {
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            for (News n : news) {
+                String text = n.getTitle() + " " + n.getContent() + " " + n.getTopic();
+                if (pattern.matcher(text).find()) result.add(n);
+            }
+        } catch (PatternSyntaxException e) {
+            System.out.println("Wrong regex: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public String generateMarksReport() {
+        return generateMarksReportForTeacher(null);
+    }
+
+    public String generateMarksReportForTeacher(Teacher teacher) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Marks Report ===\n");
+        int count = 0;
+        double sum = 0.0;
+        int failed = 0;
+
+        for (Mark mark : marks) {
+            if (mark == null || mark.getCourse() == null) continue;
+            if (teacher != null && !mark.getCourse().getTeachers().contains(teacher)) continue;
+
+            count++;
+            sum += mark.getTotalScore();
+            if ("F".equals(mark.getLetterGrade())) failed++;
+            sb.append(count).append(") ").append(mark).append("\n");
+        }
+
+        sb.append("Total marks: ").append(count).append("\n");
+        if (count > 0) {
+            sb.append("Average score: ").append(String.format("%.2f", sum / count)).append("\n");
+            sb.append("Failed marks: ").append(failed).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ---------- object serialization (main Part C storage) ----------
 
     public void saveData() {
+        File dir = new File(DATA_DIR);
+        if (!dir.exists()) dir.mkdirs();
+
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(DATA_FILE))) {
+            out.writeObject(this);
+            System.out.println("[DataStorage] Serialized data saved to " + DATA_FILE);
+        } catch (IOException e) {
+            System.err.println("Serialization error: " + e.getMessage());
+        }
+    }
+
+    public void loadData() {
+        File file = new File(DATA_FILE);
+        if (!file.exists()) {
+            System.out.println("[DataStorage] No serialized data. Starting fresh.");
+            return;
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            Object obj = in.readObject();
+            if (obj instanceof DataStorage) {
+                copyFrom((DataStorage) obj);
+                System.out.println("[DataStorage] Deserialized data loaded from " + DATA_FILE);
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Deserialization error: " + e.getMessage());
+        }
+    }
+
+    public static DataStorage loadFromFile(String fileName) {
+        File file = new File(fileName);
+        if (!file.exists()) return null;
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            Object obj = in.readObject();
+            if (obj instanceof DataStorage) return (DataStorage) obj;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Deserialization error: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // Old text-file save/load is kept as a fallback and for demonstration of Scanner/PrintWriter.
+    public void saveDataAsText() {
         File dir = new File(DATA_DIR);
         if (!dir.exists()) dir.mkdirs();
 
@@ -433,10 +586,10 @@ public class DataStorage {
         }
     }
 
-    public void loadData() {
+    public void loadDataFromText() {
         File dir = new File(DATA_DIR);
         if (!dir.exists() || !new File(DATA_DIR, "users.txt").exists()) {
-            System.out.println("[DataStorage] No saved data. Starting fresh.");
+            System.out.println("[DataStorage] No text data. Starting fresh.");
             return;
         }
         try {
@@ -775,11 +928,13 @@ public class DataStorage {
         for (Message m : messages) {
             if (m instanceof Request) {
                 Request r = (Request) m;
-                pw.println("REQUEST;" + esc(r.getMessageId()) + ";" + r.getSender().getId()
+                String senderId = r.getSender() != null ? r.getSender().getId() : "";
+                pw.println("REQUEST;" + esc(r.getMessageId()) + ";" + senderId
                         + ";" + esc(r.getContent()) + ";" + r.getStatus());
             } else {
                 String receiverId = m.getReceiver() != null ? m.getReceiver().getId() : "";
-                pw.println("REGULAR;" + esc(m.getMessageId()) + ";" + m.getSender().getId()
+                String senderId = m.getSender() != null ? m.getSender().getId() : "";
+                pw.println("REGULAR;" + esc(m.getMessageId()) + ";" + senderId
                         + ";" + receiverId + ";" + esc(m.getContent()));
             }
         }

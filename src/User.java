@@ -1,6 +1,9 @@
+import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class User implements Observer {
+public abstract class User implements Observer, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     protected String id;
     protected String firstName;

@@ -1,9 +1,12 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class ResearchProject {
+public class ResearchProject implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String projectId;
     private String topic;

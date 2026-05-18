@@ -1,8 +1,11 @@
+import java.io.Serializable;
 import java.util.Objects;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-public class Lesson {
+public class Lesson implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String lessonId;
     private String topic;

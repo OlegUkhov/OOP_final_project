@@ -1,10 +1,9 @@
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class Journal implements Observable, Serializable {
+public class Journal implements Observable {
 
     private static final long serialVersionUID = 1L;
 

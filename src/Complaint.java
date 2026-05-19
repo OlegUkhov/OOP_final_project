@@ -21,6 +21,8 @@ public class Complaint implements Serializable {
         this.date = date;
     }
 
+    public Date getDate() { return date; }
+
     public String getComplaintId() { return complaintId; }
     public Student getStudent() { return student; }
     public String getText() { return text; }

@@ -1,6 +1,9 @@
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Enrollment {
+public class Enrollment implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String studentId;
     private String courseId;

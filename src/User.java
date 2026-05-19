@@ -1,7 +1,6 @@
-import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class User implements Observer, Serializable {
+public abstract class User implements Observer {
 
     private static final long serialVersionUID = 1L;
 
@@ -38,16 +37,11 @@ public abstract class User implements Observer, Serializable {
 
     @Override
     public void update(ResearchPaper paper) {
-        if (paper != null) {
-            System.out.println("[JOURNAL] " + firstName + " — new paper: " + paper.getTitle());
-        }
+        // Observer notification — user can view journals via menu
     }
 
     public void onNewsReceived(News item) {
-        if (item != null) {
-            System.out.println("[NEWS] " + firstName + " received: " + item.getTitle()
-                    + (item.isPinned() ? " [PINNED]" : ""));
-        }
+        // Observer notification — user can view news via menu
     }
 
     public String getId() { return id; }

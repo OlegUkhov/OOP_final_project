@@ -33,6 +33,15 @@ public abstract class Employee extends User {
         }
     }
 
+    public void sendMessage(User receiver, String text) {
+        if (receiver != null && text != null && !text.isEmpty()) {
+            Message msg = new Message(
+                    UUID.randomUUID().toString(), this, receiver, text, new Date());
+            DataStorage.getInstance().addMessage(msg);
+            System.out.println("[MESSAGE] " + msg);
+        }
+    }
+
     public List<Request> viewRequests() {
         return new ArrayList<>();
     }

@@ -1,9 +1,7 @@
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
-public abstract class ResearcherDecorator implements Researcher, Serializable {
+public abstract class ResearcherDecorator implements Researcher {
 
     private static final long serialVersionUID = 1L;
 

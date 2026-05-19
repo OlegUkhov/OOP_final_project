@@ -40,6 +40,9 @@ public class DataStorage implements Serializable {
     private List<String> openAttendanceSessions;
     private List<StudentOrganization> organizations;
     private List<String> diplomaPaperIds;
+    private List<GradeEntry> gradeEntries;
+    private boolean registrationsOpen;
+    private boolean courseRegistrationOpen;
 
     private DataStorage() {
         users = new ArrayList<>();
@@ -57,6 +60,9 @@ public class DataStorage implements Serializable {
         openAttendanceSessions = new ArrayList<>();
         organizations = new ArrayList<>();
         diplomaPaperIds = new ArrayList<>();
+        gradeEntries = new ArrayList<>();
+        registrationsOpen = true;
+        courseRegistrationOpen = true;
     }
 
     public static synchronized DataStorage getInstance() {
@@ -110,6 +116,14 @@ public class DataStorage implements Serializable {
 
     public void addCourse(Course course) {
         if (course != null && !courses.contains(course)) courses.add(course);
+    }
+
+    public void removeCourse(String courseId) {
+        courses.removeIf(c -> c.getCourseId().equals(courseId));
+        // Also remove related enrollments, marks, grade entries
+        enrollments.removeIf(e -> e.getCourseId().equals(courseId));
+        marks.removeIf(m -> m.getCourse() != null && m.getCourse().getCourseId().equals(courseId));
+        gradeEntries.removeIf(g -> g.getCourseId().equals(courseId));
     }
 
     public Course findCourseById(String courseId) {
@@ -200,12 +214,66 @@ public class DataStorage implements Serializable {
         if (mark != null && !marks.contains(mark)) marks.add(mark);
     }
 
+    /** Remove a mark by its id. */
+    public void removeMark(String markId) {
+        if (markId == null) return;
+        marks.removeIf(m -> markId.equals(m.getMarkId()));
+    }
+
     public List<Mark> getMarksForStudent(Student student) {
         List<Mark> result = new ArrayList<>();
         if (student == null) return result;
         for (Mark m : marks) {
             if (m.getStudent() != null && m.getStudent().getId().equals(student.getId())) {
                 result.add(m);
+            }
+        }
+        return result;
+    }
+
+    /** Find a mark for a specific student-course combination. */
+    public Mark findMarkForStudentCourse(String studentId, String courseId) {
+        if (studentId == null || courseId == null) return null;
+        for (Mark m : marks) {
+            if (m.getStudent() != null && m.getStudent().getId().equals(studentId)
+                    && m.getCourse() != null && m.getCourse().getCourseId().equals(courseId)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    /** Get all marks for a specific course. */
+    public List<Mark> getMarksForCourse(String courseId) {
+        List<Mark> result = new ArrayList<>();
+        if (courseId == null) return result;
+        for (Mark m : marks) {
+            if (m.getCourse() != null && m.getCourse().getCourseId().equals(courseId)) {
+                result.add(m);
+            }
+        }
+        return result;
+    }
+
+    /** Get all students who have retake status for any course. */
+    public List<Student> getStudentsWithRetakes() {
+        List<Student> result = new ArrayList<>();
+        for (User u : users) {
+            if (u instanceof Student) {
+                Student s = (Student) u;
+                if (s.getRetakeCount() > 0) result.add(s);
+            }
+        }
+        return result;
+    }
+
+    /** Get all expelled students (>3 retakes). */
+    public List<Student> getExpelledStudents() {
+        List<Student> result = new ArrayList<>();
+        for (User u : users) {
+            if (u instanceof Student) {
+                Student s = (Student) u;
+                if (s.isExpelled()) result.add(s);
             }
         }
         return result;
@@ -416,6 +484,43 @@ public class DataStorage implements Serializable {
         for (ResearchPaper p : all) System.out.println(p);
     }
 
+    // ---------- GradeEntry (journal) CRUD ----------
+
+    /** Add a new grade entry to the journal. */
+    public void addGradeEntry(GradeEntry entry) {
+        if (entry != null && !gradeEntries.contains(entry)) gradeEntries.add(entry);
+    }
+
+    /** Remove a grade entry by its id. */
+    public void removeGradeEntry(String entryId) {
+        if (entryId == null) return;
+        gradeEntries.removeIf(e -> entryId.equals(e.getEntryId()));
+    }
+
+    /**
+     * Return all grade entries for a specific student in a specific course.
+     * The teacher can only call this for courses they teach.
+     */
+    public List<GradeEntry> getGradeEntries(String studentId, String courseId) {
+        List<GradeEntry> result = new ArrayList<>();
+        if (studentId == null || courseId == null) return result;
+        for (GradeEntry e : gradeEntries) {
+            if (studentId.equals(e.getStudentId()) && courseId.equals(e.getCourseId())) {
+                result.add(e);
+            }
+        }
+        return result;
+    }
+
+    /** Return all grade entries for a specific course (all students). */
+    public List<GradeEntry> getGradeEntriesForCourse(String courseId) {
+        List<GradeEntry> result = new ArrayList<>();
+        if (courseId == null) return result;
+        for (GradeEntry e : gradeEntries) {
+            if (courseId.equals(e.getCourseId())) result.add(e);
+        }
+        return result;
+    }
 
     private void copyFrom(DataStorage other) {
         if (other == null) return;
@@ -434,7 +539,16 @@ public class DataStorage implements Serializable {
         this.openAttendanceSessions = other.openAttendanceSessions != null ? other.openAttendanceSessions : new ArrayList<>();
         this.organizations = other.organizations != null ? other.organizations : new ArrayList<>();
         this.diplomaPaperIds = other.diplomaPaperIds != null ? other.diplomaPaperIds : new ArrayList<>();
+        this.gradeEntries = other.gradeEntries != null ? other.gradeEntries : new ArrayList<>();
+        this.registrationsOpen = other.registrationsOpen;
+        this.courseRegistrationOpen = other.courseRegistrationOpen;
     }
+
+    public boolean isRegistrationsOpen() { return registrationsOpen; }
+    public void setRegistrationsOpen(boolean open) { this.registrationsOpen = open; }
+
+    public boolean isCourseRegistrationOpen() { return courseRegistrationOpen; }
+    public void setCourseRegistrationOpen(boolean open) { this.courseRegistrationOpen = open; }
 
     public User authenticate(String email, String password) {
         User user = findUserByEmail(email);
@@ -580,6 +694,7 @@ public class DataStorage implements Serializable {
             saveOrganizations();
             saveJournals();
             saveDiplomaPapers();
+            saveSettings();
             System.out.println("[DataStorage] Saved to text files in " + DATA_DIR + "/");
         } catch (FileNotFoundException e) {
             System.err.println("Save error: " + e.getMessage());
@@ -607,9 +722,35 @@ public class DataStorage implements Serializable {
             organizations = loadOrganizations();
             journals = loadJournals();
             diplomaPaperIds = loadDiplomaPapers();
+            loadSettings();
             System.out.println("[DataStorage] Loaded from text files.");
         } catch (FileNotFoundException e) {
             System.err.println("Load error: " + e.getMessage());
+        }
+    }
+
+    private void saveSettings() throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter(DATA_DIR + "/settings.txt");
+        pw.println("registrationsOpen=" + this.registrationsOpen);
+        pw.println("courseRegistrationOpen=" + this.courseRegistrationOpen);
+        pw.close();
+    }
+
+    private void loadSettings() {
+        File f = new File(DATA_DIR + "/settings.txt");
+        if (!f.exists()) return;
+        try (Scanner sc = new Scanner(f)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine().trim();
+                if (line.isEmpty() || !line.contains("=")) continue;
+                String[] p = line.split("=", 2);
+                String key = p[0].trim();
+                String val = p[1].trim();
+                if ("registrationsOpen".equals(key)) this.registrationsOpen = Boolean.parseBoolean(val);
+                if ("courseRegistrationOpen".equals(key)) this.courseRegistrationOpen = Boolean.parseBoolean(val);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading settings: " + e.getMessage());
         }
     }
 
@@ -623,16 +764,19 @@ public class DataStorage implements Serializable {
         for (User u : users) {
             if (u instanceof Student && !(u instanceof GraduateStudent)) {
                 Student s = (Student) u;
+                String retakeIds = String.join(",", s.getRetakeCourseIds());
                 pw.println("STUDENT;" + esc(u.getId()) + ";" + esc(u.getFirstName()) + ";"
                         + esc(u.getLastName()) + ";" + esc(u.getEmail()) + ";" + esc(u.getPassword())
                         + ";" + u.getLanguage() + ";" + esc(s.getStudentId()) + ";"
-                        + s.getGpa() + ";" + s.getFailCount() + ";" + s.isResearcher());
+                        + s.getGpa() + ";" + s.getFailCount() + ";" + s.isResearcher()
+                        + ";" + s.isExpelled() + ";" + retakeIds);
             } else if (u instanceof GraduateStudent) {
                 GraduateStudent g = (GraduateStudent) u;
+                String retakeIds = String.join(",", g.getRetakeCourseIds());
                 pw.println("GRADUATE;" + esc(u.getId()) + ";" + esc(u.getFirstName()) + ";"
                         + esc(u.getLastName()) + ";" + esc(u.getEmail()) + ";" + esc(u.getPassword())
                         + ";" + u.getLanguage() + ";" + esc(g.getStudentId()) + ";"
-                        + g.getGpa() + ";" + g.getFailCount());
+                        + g.getGpa() + ";" + g.getFailCount() + ";" + g.isExpelled() + ";" + retakeIds);
             } else if (u instanceof Teacher) {
                 Teacher t = (Teacher) u;
                 pw.println("TEACHER;" + esc(u.getId()) + ";" + esc(u.getFirstName()) + ";"
@@ -684,13 +828,29 @@ public class DataStorage implements Serializable {
                 Student s = new Student(p[1], p[2], p[3], p[4], p[5], lang, p[7]);
                 s.setGpa(Double.parseDouble(p[8]));
                 s.failCount = Integer.parseInt(p[9]);
-                s.setResearcher(Boolean.parseBoolean(p[10]));
+                if (p.length > 10) s.setResearcher(Boolean.parseBoolean(p[10]));
+                if (p.length > 11 && Boolean.parseBoolean(p[11])) {
+                    // expelled will be set implicitly by addRetakeCourse if >3, but also set directly
+                }
+                if (p.length > 12 && !p[12].isEmpty()) {
+                    for (String cid : p[12].split(",")) {
+                        if (!cid.isEmpty()) s.addRetakeCourse(cid);
+                    }
+                }
                 return s;
             }
             case "GRADUATE": {
                 GraduateStudent g = new GraduateStudent(p[1], p[2], p[3], p[4], p[5], lang, p[7]);
                 g.setGpa(Double.parseDouble(p[8]));
                 g.failCount = Integer.parseInt(p[9]);
+                if (p.length > 11 && !p[11].isEmpty()) {
+                    // expelled handled via retake count
+                }
+                if (p.length > 12 && !p[12].isEmpty()) {
+                    for (String cid : p[12].split(",")) {
+                        if (!cid.isEmpty()) g.addRetakeCourse(cid);
+                    }
+                }
                 return g;
             }
             case "TEACHER": {
@@ -822,7 +982,7 @@ public class DataStorage implements Serializable {
         for (Mark m : marks) {
             pw.println(m.getMarkId() + ";" + m.getStudent().getId() + ";" + m.getCourse().getCourseId()
                     + ";" + m.getFirstAttestation() + ";" + m.getSecondAttestation() + ";"
-                    + m.getFinalExam());
+                    + m.getFinalExam() + ";" + m.isAttestationClosed());
         }
         pw.close();
     }
@@ -839,8 +999,12 @@ public class DataStorage implements Serializable {
             Student s = (Student) findUserById(p[1]);
             Course c = findCourseById(p[2]);
             if (s != null && c != null) {
-                list.add(new Mark(p[0], Double.parseDouble(p[3]), Double.parseDouble(p[4]),
-                        Double.parseDouble(p[5]), s, c));
+                Mark m = new Mark(p[0], Double.parseDouble(p[3]), Double.parseDouble(p[4]),
+                        Double.parseDouble(p[5]), s, c);
+                if (p.length > 6 && Boolean.parseBoolean(p[6])) {
+                    m.closeAttestation();
+                }
+                list.add(m);
             }
         }
         sc.close();
@@ -950,8 +1114,7 @@ public class DataStorage implements Serializable {
             String line = sc.nextLine().trim();
             if (line.isEmpty()) continue;
             String[] p = line.split(";");
-            User sender = findUserById(p[2]);
-            if (sender == null) continue;
+            User sender = p[2].isEmpty() ? null : findUserById(p[2]);
             if ("REQUEST".equals(p[0])) {
                 Request r = new Request(p[1], sender, p[3]);
                 r.setStatus(RequestStatus.valueOf(p[4]));

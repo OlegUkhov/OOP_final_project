@@ -2,6 +2,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Course implements Serializable {
 
@@ -13,7 +14,7 @@ public class Course implements Serializable {
     private CourseType courseType;
     private String major;
     private int studyYear;
-    private List<Teacher> teachers;
+    private List<String> teacherIds; // Store teacher IDs instead of Teacher objects
     private List<Lesson> lessons;
 
     public Course(String courseId, String name, int credits, CourseType courseType) {
@@ -28,20 +29,31 @@ public class Course implements Serializable {
         this.courseType = courseType;
         this.major = major;
         this.studyYear = studyYear;
-        this.teachers = new ArrayList<>();
+        this.teacherIds = new ArrayList<>();
         this.lessons = new ArrayList<>();
     }
 
     public void addTeacher(Teacher t) {
-        if (t != null && !teachers.contains(t)) teachers.add(t);
+        if (t != null && !teacherIds.contains(t.getId())) teacherIds.add(t.getId());
     }
 
     public void addLesson(Lesson l) {
         if (l != null && !lessons.contains(l)) lessons.add(l);
     }
 
+    public void removeLessonById(String lessonId) {
+        lessons.removeIf(l -> l.getLessonId().equals(lessonId));
+    }
+
     public List<Lesson> getLessons() { return new ArrayList<>(lessons); }
-    public List<Teacher> getTeachers() { return new ArrayList<>(teachers); }
+    public List<String> getTeacherIds() { return new ArrayList<>(teacherIds); }
+    public List<Teacher> getTeachers() {
+        return teacherIds.stream()
+                .map(id -> (Teacher) DataStorage.getInstance().findUserById(id))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
     public String getCourseId() { return courseId; }
     public int getCredits() { return credits; }
     public String getName() { return name; }
@@ -59,7 +71,7 @@ public class Course implements Serializable {
 
     @Override
     public String toString() {
-        return "Course{id='" + courseId + "', name='" + name + "', credits=" + credits + "}";
+        return "Course{id=\'" + courseId + "\", name=\'" + name + "\", credits=" + credits + "}";
     }
 
     @Override

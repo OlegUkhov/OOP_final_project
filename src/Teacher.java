@@ -37,13 +37,69 @@ public class Teacher extends Employee {
 
         DataStorage.getInstance().addMark(mark);
 
-        if ("F".equals(mark.getLetterGrade())) {
-            s.failCount++;
-            if (s.failCount > 3) {
-                throw new CourseFailLimitException(
-                        "Student " + s.getFirstName() + " exceeded fail limit: " + s.failCount);
+        // Check retake status
+        if ("RETAKE".equals(mark.getStatus())) {
+            s.addRetakeCourse(c.getCourseId());
+        }
+    }
+
+    /** Set the 1st attestation score for an existing mark. */
+    public void setFirstAttestation(Student s, Course c, double value) {
+        if (s == null || c == null || !viewCourses().contains(c)) return;
+        Mark mark = DataStorage.getInstance().findMarkForStudentCourse(s.getId(), c.getCourseId());
+        if (mark != null && !mark.isAttestationClosed()) {
+            mark.setFirstAttestation(value);
+        }
+    }
+
+    /** Set the 2nd attestation score for an existing mark. */
+    public void setSecondAttestation(Student s, Course c, double value) {
+        if (s == null || c == null || !viewCourses().contains(c)) return;
+        Mark mark = DataStorage.getInstance().findMarkForStudentCourse(s.getId(), c.getCourseId());
+        if (mark != null && !mark.isAttestationClosed()) {
+            mark.setSecondAttestation(value);
+        }
+    }
+
+    /** Set the final exam score and check for retake/FX. */
+    public void setFinalExam(Student s, Course c, double value) {
+        if (s == null || c == null || !viewCourses().contains(c)) return;
+        Mark mark = DataStorage.getInstance().findMarkForStudentCourse(s.getId(), c.getCourseId());
+        if (mark != null) {
+            mark.setFinalExam(value);
+            // Check retake/FX after setting final
+            if (mark.isFinalRetake()) {
+                s.addRetakeCourse(c.getCourseId());
             }
         }
+    }
+
+    /** Close attestation period for a student's mark on a course.
+     *  After closing, if attestation total < 29.5 → retake. */
+    public void closeAttestation(Student s, Course c) {
+        if (s == null || c == null || !viewCourses().contains(c)) return;
+        Mark mark = DataStorage.getInstance().findMarkForStudentCourse(s.getId(), c.getCourseId());
+        if (mark != null && !mark.isAttestationClosed()) {
+            mark.closeAttestation();
+            if (mark.isAttestationRetake()) {
+                s.addRetakeCourse(c.getCourseId());
+            }
+        }
+    }
+
+    public void addGradeEntry(Student s, Course c, double value, String description) {
+        if (s == null || c == null || !viewCourses().contains(c)) return;
+        GradeEntry ge = new GradeEntry(s.getId(), c.getCourseId(), value, description, new Date());
+        DataStorage.getInstance().addGradeEntry(ge);
+    }
+
+    public void removeGradeEntry(String entryId) {
+        DataStorage.getInstance().removeGradeEntry(entryId);
+    }
+
+    public List<GradeEntry> getJournal(Course c) {
+        if (c == null || !viewCourses().contains(c)) return new java.util.ArrayList<>();
+        return DataStorage.getInstance().getGradeEntriesForCourse(c.getCourseId());
     }
 
     public Complaint sendComplaint(Student s, String text, ComplaintUrgency urgency) {
@@ -98,8 +154,9 @@ public class Teacher extends Employee {
 
     @Override
     public String toString() {
-        return "Teacher{id='" + id + "', name='" + firstName + " " + lastName
-                + "', position=" + position
+        String name = (firstName == null ? "" : firstName.trim()) + (lastName == null || lastName.trim().isEmpty() ? "" : " " + lastName.trim());
+        String eid = employeeId != null && !employeeId.isEmpty() ? employeeId : id;
+        return "Teacher{" + "empId='" + eid + "', name='" + name + "', position=" + position
                 + ", rating=" + String.format("%.2f", rating)
                 + ", courses=" + viewCourses().size() + "}";
     }

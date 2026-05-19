@@ -1,12 +1,11 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.DayOfWeek;
+import java.util.stream.Collectors;
 
 public class Student extends User {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private String studentId;
     protected double gpa;
@@ -15,6 +14,8 @@ public class Student extends User {
     private int studyYear;      // 1-7
     private String faculty;     // e.g. "SITE", "Business"
     private boolean graduated;
+    private List<String> retakeCourseIds; // course IDs where student has retake status
+    private boolean expelled;              // true if >3 retakes
 
     public Student(String id, String firstName, String lastName, String email,
                    String password, Language language, String studentId) {
@@ -26,13 +27,15 @@ public class Student extends User {
         this.studyYear = 1;
         this.faculty = "";
         this.graduated = false;
+        this.retakeCourseIds = new ArrayList<>();
+        this.expelled = false;
     }
 
     public void registerForCourse(Course c, Lesson lesson) {
         if (c == null || lesson == null || DataStorage.getInstance().isEnrolledForLesson(this, c, lesson)) return;
-        if (failCount >= 3) {
+        if (expelled || retakeCourseIds.size() >= 3) {
             throw new CourseFailLimitException(
-                    "Cannot register: exceeded 3 course failures (" + failCount + ")");
+                    "Cannot register: exceeded 3 course retakes (" + retakeCourseIds.size() + ")" + (expelled ? " — EXPELLED" : ""));
         }
         int total = getTotalCredits() + c.getCredits();
         if (total > 21) {
@@ -40,7 +43,29 @@ public class Student extends User {
                     "Cannot exceed 21 credits. Current " + getTotalCredits()
                             + ", course " + c.getCredits());
         }
+        if (lesson.getEnrolledStudentsCount() >= lesson.getCapacity()) {
+            System.out.println("Lesson " + lesson.getLessonId() + " is full.");
+            return;
+        }
+
         DataStorage.getInstance().enrollStudent(this, c, lesson);
+        lesson.incrementEnrolledStudentsCount();
+    }
+
+    // Overloaded method to register for a course without specifying a lesson yet (for lectures)
+    public void registerForCourse(Course c) {
+        if (c == null) return;
+        if (expelled || retakeCourseIds.size() >= 3) {
+            throw new CourseFailLimitException(
+                    "Cannot register: exceeded 3 course retakes (" + retakeCourseIds.size() + ")" + (expelled ? " — EXPELLED" : ""));
+        }
+        int total = getTotalCredits() + c.getCredits();
+        if (total > 21) {
+            throw new CourseOverloadException(
+                    "Cannot exceed 21 credits. Current " + getTotalCredits()
+                            + ", course " + c.getCredits());
+        }
+        DataStorage.getInstance().enrollStudent(this, c, null); // Enroll without a specific lesson initially
     }
 
     public void submitRequest(String description) {
@@ -72,7 +97,12 @@ public class Student extends User {
         sb.append("Year: ").append(studyYear).append(graduated ? " (Graduated)" : "").append("\n");
         sb.append("GPA: ").append(String.format("%.2f", gpa)).append("\n");
         sb.append("Credits: ").append(getTotalCredits()).append("/21\n");
-        sb.append("Failures: ").append(failCount).append("/3\n");
+        sb.append("Retakes: ").append(retakeCourseIds.size()).append("/3");
+        if (expelled) sb.append(" — EXPELLED");
+        sb.append("\n");
+        if (!retakeCourseIds.isEmpty()) {
+            sb.append("Retake courses: ").append(String.join(", ", retakeCourseIds)).append("\n");
+        }
         for (Mark mark : viewMarks()) {
             sb.append("  ").append(mark).append("\n");
         }
@@ -137,16 +167,32 @@ public class Student extends User {
     public boolean isGraduated()       { return graduated; }
     public void setGraduated(boolean g){ this.graduated = g; }
 
+    /** Add a course to the retake list. If total retakes exceed 3, student is expelled. */
+    public void addRetakeCourse(String courseId) {
+        if (courseId != null && !retakeCourseIds.contains(courseId)) {
+            retakeCourseIds.add(courseId);
+            failCount = retakeCourseIds.size();
+            if (retakeCourseIds.size() > 3) {
+                expelled = true;
+            }
+        }
+    }
+
+    public List<String> getRetakeCourseIds() { return new ArrayList<>(retakeCourseIds); }
+    public int getRetakeCount() { return retakeCourseIds.size(); }
+    public boolean isExpelled() { return expelled; }
+
     public void viewAllNews() {
         DataStorage.getInstance().printNewsFeed(this);
     }
 
     @Override
     public String toString() {
-        return "Student{id='" + id + "', name='" + firstName + " " + lastName
-                + "', faculty='" + faculty + "', year=" + studyYear
+        return "Student{id=\'" + id + "\', name=\'" + firstName + " " + lastName
+                + "\', faculty=\'" + faculty + "\', year=" + studyYear
                 + ", gpa=" + String.format("%.2f", gpa)
-                + ", credits=" + getTotalCredits() + ", fails=" + failCount
+                + ", credits=" + getTotalCredits() + ", retakes=" + retakeCourseIds.size()
+                + (expelled ? ", EXPELLED" : "")
                 + (graduated ? ", GRADUATED" : "") + "}";
     }
 }

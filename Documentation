@@ -1,0 +1,429 @@
+University Research System
+
+A comprehensive Java console application for managing academic and research activities at a university. The system handles course registration, student grading, research paper management, journal subscriptions, and technical support ticketing.
+
+Overview
+
+The University Research System is designed to support multiple user roles with different responsibilities and permissions. Students register for courses with credit limits, teachers manage courses and input grades, managers approve registrations and oversee the system, researchers publish papers and calculate impact metrics, and administrators manage users and system logs.
+
+The system implements professional object-oriented design patterns including Singleton for centralized data storage, Decorator for flexible researcher roles, Observer for journal notifications, and Strategy for flexible sorting algorithms.
+
+Features
+
+Core Functionality
+- User authentication and role based access control
+- Course registration with constraint enforcement (max 21 credits, max 3 failures per course)
+- Three component marking system (first attestation, second attestation, final exam)
+- Student transcript generation and GPA calculation
+- Attendance tracking system
+
+Research Management
+- Research paper publication and management
+- H-index calculation from paper citations
+- Research project participation with role validation
+- Journal subscriptions with automatic notifications
+- Multiple citation formats (PlainText and BibTeX)
+- Paper sorting by date, citations, or page length
+
+Academic Administration
+- Course assignment to teachers
+- Student registration approval workflow
+- Statistical reporting on academic performance
+- News system with automatic research topic pinning
+- News comments and discussion
+
+Technical Support
+- User submitted technical request workflow
+- Request status tracking (VIEWED, ACCEPTED, REJECTED, DONE)
+- Tech support specialist request management
+
+System Features
+- Multilingual support (English, Russian, Kazakh)
+- Data persistence to text files
+- Custom exception handling for constraint violations
+- Centralized data storage via Singleton pattern
+
+System Requirements
+
+- Java 8 or higher
+- No external dependencies required for core functionality
+- Windows or Linux system (system designed for cross platform operation)
+
+Installation
+
+1. Clone or download the repository
+2. Navigate to project directory
+3. Ensure Java JDK is installed and in system PATH
+
+Building the Project
+
+Compile all source files:
+```bash
+javac -d out -cp src src\Main.java
+```
+
+This compiles all source files from the src directory and places class files in the out directory.
+
+Running the System
+
+Execute the compiled application:
+```bash
+java -cp out Main
+```
+
+The system displays a login prompt. Use sample credentials to authenticate.
+
+Sample Accounts
+
+The system includes predefined test accounts for demonstration:
+
+**Student Account**
+- Email: student@kbtu.kz
+- Password: student
+
+**Teacher Account**
+- Email: teacher@kbtu.kz
+- Password: teacher
+
+**Manager Account**
+- Email: manager@kbtu.kz
+- Password: manager
+
+**Admin Account**
+- Email: admin@kbtu.kz
+- Password: admin
+
+Project Structure
+
+```
+OOP_Final/
+├── src/
+│   ├── Main.java                 # Console UI entry point
+│   ├── User.java                 # Base user class
+│   ├── Employee.java             # Employee base class
+│   ├── Teacher.java              # Teacher implementation
+│   ├── Student.java              # Student implementation
+│   ├── GraduateStudent.java       # Graduate student with supervisor
+│   ├── Manager.java              # Manager implementation
+│   ├── Admin.java                # Admin implementation
+│   ├── TechSupportSpecialist.java # Tech support implementation
+│   ├── Researcher.java           # Researcher interface
+│   ├── ResearcherDecorator.java   # Decorator for researcher role
+│   ├── TeacherResearcher.java     # Teacher as researcher
+│   ├── StudentResearcher.java     # Student as researcher
+│   ├── Course.java               # Course entity
+│   ├── Lesson.java               # Lesson entity
+│   ├── Mark.java                 # Student mark entity
+│   ├── ResearchPaper.java        # Research paper entity
+│   ├── ResearchProject.java      # Research project entity
+│   ├── Journal.java              # Journal with observer pattern
+│   ├── News.java                 # News item entity
+│   ├── Message.java              # Message entity
+│   ├── Request.java              # Tech support request
+│   ├── DataStorage.java          # Singleton data storage
+│   ├── Enrollment.java           # Course enrollment entity
+│   ├── Attendance.java           # Attendance record entity
+│   ├── StudentOrganization.java   # Student club entity
+│   ├── Complaint.java            # Teacher complaint entity
+│   ├── Log.java                  # System activity log
+│   ├── CitationComparator.java    # Sort papers by citations
+│   ├── DateComparator.java        # Sort papers by date
+│   ├── LengthComparator.java      # Sort papers by pages
+│   ├── CourseOverloadException.java
+│   ├── CourseFailLimitException.java
+│   ├── LowHIndexException.java
+│   ├── NotResearcherException.java
+│   ├── Language.java             # Language enum
+│   ├── TeacherPosition.java      # Teacher position enum
+│   ├── CourseType.java           # Course type enum
+│   ├── ManagerType.java          # Manager type enum
+│   └── ... (other enums and classes)
+├── out/                          # Compiled class files
+├── data/                         # Persistent data files (created at runtime)
+├── Class_Diagram.puml           # PlantUML class diagram
+├── UseCase_Diagram.puml         # PlantUML use case diagram
+└── README.md                     # This file
+
+```
+
+Design Patterns
+
+The system implements four major design patterns as required by project specifications:
+
+1. Singleton Pattern - DataStorage
+Ensures exactly one data storage instance exists throughout program execution. All system components access the same DataStorage.getInstance() to maintain data consistency. Alternative approaches like passing storage as parameters everywhere would create tight coupling.
+
+2. Decorator Pattern - Researcher Role
+Allows adding researcher capability to any user (Teacher or Student) without modifying their class hierarchy. ResearcherDecorator wraps User objects and adds research methods. TeacherResearcher and StudentResearcher are concrete decorators. This solves the problem that Java lacks multiple inheritance but users can be both teachers and researchers.
+
+3. Observer Pattern - Journal Notifications
+Implements automatic notification when papers are published to journals. Journal is Observable, Users are Observers. When a paper is published, journal calls notifyObservers which sends notifications to all subscribers. This decouples publishers from subscribers and scales well.
+
+4. Strategy Pattern - Paper Sorting
+Allows flexible sorting of research papers using interchangeable comparators. CitationComparator, DateComparator, and LengthComparator each implement the Strategy. The printPapers method takes a Comparator as parameter and sorts accordingly. Adding new sort strategies requires only new Comparator class without modifying existing code.
+
+Key Constraints
+
+Student Registration Constraints
+- Maximum 21 total credits per semester (throws CourseOverloadException)
+- Cannot fail same course more than 3 times (throws CourseFailLimitException)
+- Cannot have scheduling conflicts between lessons
+
+Research Constraints
+- Only Researchers can join ResearchProject (throws NotResearcherException)
+- GraduateStudent supervisors must have h-index at least 3 (throws LowHIndexException)
+
+Academic Constraints
+- Teachers with position PROFESSOR are always researchers
+- Professors can publish papers and calculate h-index
+- Master and PhD students (GraduateStudents) are always researchers
+- Regular students and other teachers can optionally become researchers
+
+User Roles and Permissions
+
+Student
+- Register for courses
+- View marks and transcript
+- Rate teachers
+- Submit technical requests
+- Join student organizations
+- View and comment on news
+- Subscribe to research journals
+
+Teacher
+- View assigned courses
+- Manage course content and lessons
+- Input student marks
+- View student information
+- Send complaints to managers
+- Send messages to other employees
+- Conduct research (if researcher)
+
+Manager
+- Assign courses to teachers
+- Approve student registrations
+- Add new courses to system
+- Create statistical reports
+- Publish and manage news
+- View employee requests
+- Filter students by various criteria
+
+Admin
+- Add new users
+- Remove users
+- Update user information
+- View system activity logs
+
+Tech Support Specialist
+- View new technical requests
+- Accept requests to work on
+- Reject requests
+- Mark requests as completed
+- Track request status changes
+
+Researcher (Role, can be added to Teacher or Student)
+- Publish research papers
+- Calculate h-index
+- Lead research projects
+- Add project participants
+- Print papers sorted by various criteria
+- Generate paper citations
+
+Database Schema
+
+Users Table
+Stores all user information with role discrimination via type field.
+
+Courses Table
+Stores course information including credits, type, major, and year.
+
+Enrollments Table
+Links students to courses and lessons for registration tracking.
+
+Marks Table
+Stores three component grades for each student-course pair.
+
+ResearchPapers Table
+Stores publication information including citations and metadata.
+
+Journals Table
+Stores journal names and subscriber lists.
+
+News Table
+Stores news items with topic and pinned status.
+
+Messages and Requests Table
+Stores communication between users and technical support requests.
+
+Data is persisted to text files in the data/ directory. Files are created automatically on first save.
+
+Markings and Grading
+
+Three Component System
+- First Attestation: 0-25 points
+- Second Attestation: 0-25 points
+- Final Exam: 0-50 points
+- Total Score: 0-100 points
+
+Letter Grades
+- A: 85-100 (4.0 GPA)
+- B: 75-84 (3.0 GPA)
+- C: 65-74 (2.0 GPA)
+- D: 55-64 (1.0 GPA)
+- F: Below 55 (0.0 GPA)
+
+GPA Calculation
+Cumulative GPA is calculated as simple average of letter grades from all completed courses.
+
+H-Index Calculation
+
+H-index measures research impact. A researcher with h-index n has at least n papers cited at least n times each.
+
+Algorithm:
+1. Get citation count for each paper
+2. Sort citations in descending order
+3. Check each position: if citations >= position+1, increment h
+4. Stop when condition fails
+
+Example:
+- Papers with citations: [15, 10, 8, 5, 2]
+- At position 0: 15 >= 1? Yes, h=1
+- At position 1: 10 >= 2? Yes, h=2
+- At position 2: 8 >= 3? Yes, h=3
+- At position 3: 5 >= 4? Yes, h=4
+- At position 4: 2 >= 5? No, stop
+- Result: h-index = 4
+
+Language Support
+
+System supports three languages:
+- English (EN)
+- Russian (RU)
+- Kazakh (KZ)
+
+Users can switch language from main menu. All system labels and messages change to selected language.
+
+Custom Exceptions
+
+The system uses custom exceptions to signal specific error conditions:
+
+CourseOverloadException
+Thrown when student tries to register for courses exceeding 21 credit limit. Signals that operation violates academic policy.
+
+CourseFailLimitException
+Thrown when student has failed course three times and attempts to register again. Signals that student has exhausted retake attempts.
+
+LowHIndexException
+Thrown when trying to assign supervisor to graduate student if supervisor's h-index is below 3. Signals that supervisor does not meet qualification requirements.
+
+NotResearcherException
+Thrown when non-researcher tries to join research project. Signals that participant does not have required researcher status.
+
+All custom exceptions extend RuntimeException (unchecked) to signal logic errors that should fail fast and require code fixes.
+
+File Persistence
+
+Data is saved to text files in the data/ directory:
+- users.txt: All user accounts
+- courses.txt: Course catalog
+- enrollments.txt: Student registrations
+- marks.txt: Student grades
+- papers.txt: Research papers
+- projects.txt: Research projects
+- journals.txt: Academic journals
+- news.txt: News items
+- messages.txt: User communications
+- logs.txt: System activity log
+
+Files are automatically created on first save. Format uses semicolon delimiter with special character escaping for newlines and semicolons in content.
+
+Technical Architecture
+
+Object Oriented Principles
+- **Low Coupling**: User classes do not directly depend on DataStorage. Interfaces define contracts.
+- **High Cohesion**: Each class has single responsibility. User classes handle user behavior, storage classes handle persistence.
+- **DRY**: Common functionality is in base classes. Specific behavior in subclasses.
+- **Liskov Substitution**: Employee subclasses can be used anywhere Employee is expected.
+
+Design Patterns Applied
+- Singleton: DataStorage
+- Decorator: ResearcherDecorator
+- Observer: Journal notifications
+- Strategy: Comparators
+
+Exception Handling
+- Custom exceptions for constraint violations
+- Try-catch blocks for file I/O
+- Fail-fast approach for invalid operations
+
+Known Issues and Limitations
+
+Compilation Environment
+The system may fail to compile on systems without PowerShell support. Workaround is to compile using direct javac command without wrapper script.
+
+Testing
+Current testing is limited to manual console testing. No automated unit tests are included. Some edge cases may not be thoroughly tested.
+
+Main Class Delivery
+The Main class console UI was completed late in project, after primary development. Some menu flows could be more polished with more development time.
+
+Serialization
+Serialization was integrated late in development. Manual testing was performed but some edge cases in deserialization may exist.
+
+Performance Improvements
+- Database indexing for faster queries
+- Caching layer for frequently accessed data
+- Batch operations for large imports
+
+Security Enhancements
+- Password strength requirements (minimum length, character types)
+- Password hashing instead of plain text
+- Session management and timeout
+- Role based access control enforcement
+- Audit logging for sensitive operations
+
+Team and Contributions
+
+Oleg Ukhov
+- Led project development
+- Designed all classes and architecture
+- Implemented all domain classes (approximately 3000 lines)
+- Wrote Main console UI
+- Designed and implemented all design patterns
+- Created this documentation
+
+Saken Ayan
+- Implemented data serialization layer
+- Created save/load to file functionality
+- Designed text file persistence format
+
+Project Statistics
+- Total Classes: 40+
+- Total Lines of Code: Approximately 5000
+- Design Patterns: 4 (Singleton, Decorator, Observer, Strategy)
+- Custom Exceptions: 4
+- Enumerations: 9
+- User Roles: 8 (Student, Teacher, Manager, Admin, Tech Support, Graduate Student, Researcher, Employee)
+
+- Initial complete implementation
+- All core requirements implemented
+- Design patterns fully integrated
+- Data persistence functional
+- Console UI complete
+
+Building and Running Checklist
+1. Ensure Java 8+ is installed: `java -version`
+2. Navigate to project directory
+3. Compile: `javac -d out -cp src src\Main.java`
+4. Run: `java -cp out Main`
+5. Login with sample account
+6. Explore features from console menu
+
+Testing Suggestions
+1. Create student and register for course (tests credit limit)
+2. Add marks for student (tests three component system)
+3. View transcript (tests GPA calculation)
+4. Create researcher and publish paper (tests observer pattern)
+5. Try to assign low h-index supervisor (tests exception)
+6. Save and load data (tests persistence)
+7. Switch language (tests internationalization)

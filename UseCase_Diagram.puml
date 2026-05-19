@@ -1,0 +1,219 @@
+@startuml UseCase_Diagram
+title University Research System — Use Case Diagram
+
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #EEF4FF
+  BorderColor #4A90D9
+  ArrowColor #2C5F8A
+  ActorBorderColor #2C5F8A
+  ActorBackgroundColor #D6E8FF
+}
+
+' ─────────────────────────────────────────
+'  ACTOR HIERARCHY
+'  User — base actor (any authenticated user)
+'  Employee — abstract: Teacher, Manager, Admin, TechSupport
+'  Student — base, GraduateStudent extends it
+'  Researcher — ROLE, not a standalone actor:
+'               played by Teacher(Professor), GraduateStudent, or Employee
+' ─────────────────────────────────────────
+
+actor "User"                  as USR
+actor "Employee"              as EMP
+actor "Admin"                 as AD
+actor "Manager"               as MG
+actor "Teacher"               as TC
+actor "TechSupportSpecialist" as TS
+actor "Student"               as ST
+actor "GraduateStudent"       as GS
+actor "TeacherResearcher"     as TCR
+actor "StudentResearcher"     as STR
+
+' Inheritance
+EMP  -up-|> USR
+AD   -up-|> EMP
+MG   -up-|> EMP
+TC   -up-|> EMP
+TS   -up-|> EMP
+ST   -up-|> USR
+GS   -up-|> ST
+
+' Researcher role (Decorator)
+TCR  -up-|> TC  : <<researcher role>>
+STR  -up-|> GS  : <<researcher role>>
+
+' ─────────────────────────────────────────
+'  SYSTEM — AUTHENTICATION (всех касается)
+' ─────────────────────────────────────────
+rectangle "Authentication" {
+  usecase "Login to System"         as UC_Login
+  usecase "Logout"                  as UC_Logout
+  usecase "Switch Language\n(KZ/EN/RU)" as UC_Lang
+}
+
+USR --> UC_Login
+USR --> UC_Logout
+USR --> UC_Lang
+
+' ─────────────────────────────────────────
+'  SYSTEM — JOURNAL & NOTIFICATIONS (все пользователи)
+' ─────────────────────────────────────────
+rectangle "Journal & Notifications\n[Observer Pattern]" {
+  usecase "Subscribe to Journal"        as UC_Subscribe
+  usecase "Unsubscribe from Journal"    as UC_Unsubscribe
+  usecase "Receive Paper Notification"  as UC_Notify
+}
+
+USR --> UC_Subscribe
+USR --> UC_Unsubscribe
+UC_Notify ..> UC_Subscribe : <<extend>>\nonly if subscribed
+
+' ─────────────────────────────────────────
+'  ADMIN
+' ─────────────────────────────────────────
+rectangle "Admin Panel" {
+  usecase "Add User"        as UC_AddUser
+  usecase "Remove User"     as UC_RemoveUser
+  usecase "Update User"     as UC_UpdateUser
+  usecase "View Log Files"  as UC_ViewLog
+}
+
+AD --> UC_AddUser
+AD --> UC_RemoveUser
+AD --> UC_UpdateUser
+AD --> UC_ViewLog
+
+' ─────────────────────────────────────────
+'  MANAGER
+' ─────────────────────────────────────────
+rectangle "Manager Panel" {
+  usecase "Assign Course to Teacher"        as UC_AssignCourse
+  usecase "Approve Student Registration"    as UC_ApproveReg
+  usecase "Add Course for Registration\n(specify major/year)" as UC_AddCourseReg
+  usecase "Create Statistical Report"       as UC_StatReport
+  usecase "Manage News\n(pin Research news)" as UC_ManageNews
+  usecase "View Employee Requests"          as UC_ViewEmpReq
+  usecase "View Students\n(sorted by GPA / name)" as UC_ViewStudents
+  usecase "Generate Top Cited\nResearcher News"   as UC_TopCited
+}
+
+MG --> UC_AssignCourse
+MG --> UC_ApproveReg
+MG --> UC_AddCourseReg
+MG --> UC_StatReport
+MG --> UC_ManageNews
+MG --> UC_ViewEmpReq
+MG --> UC_ViewStudents
+MG --> UC_TopCited
+
+' ─────────────────────────────────────────
+'  TEACHER
+' ─────────────────────────────────────────
+rectangle "Teacher Panel" {
+  usecase "View Courses"                as UC_ViewCourses
+  usecase "Manage Course\n(add lessons, materials)" as UC_ManageCourse
+  usecase "Put Mark\n(1st att + 2nd att + final)" as UC_PutMarks
+  usecase "View Students Info"          as UC_ViewStudInfo
+  usecase "Send Complaint to Dean\n(LOW/MEDIUM/HIGH)" as UC_SendComplaint
+  usecase "Send Message to Employee"    as UC_SendMsg
+}
+
+TC --> UC_ViewCourses
+TC --> UC_ManageCourse
+TC --> UC_PutMarks
+TC --> UC_ViewStudInfo
+TC --> UC_SendComplaint
+TC --> UC_SendMsg
+
+' ─────────────────────────────────────────
+'  TECH SUPPORT
+' ─────────────────────────────────────────
+rectangle "Tech Support Panel" {
+  usecase "View New Requests\n(status: VIEWED)" as UC_ViewReq
+  usecase "Accept Request\n(status: ACCEPTED)"  as UC_AcceptReq
+  usecase "Reject Request\n(status: REJECTED)"  as UC_RejectReq
+  usecase "Mark as Done\n(status: DONE)"        as UC_DoneReq
+}
+
+TS --> UC_ViewReq
+TS --> UC_AcceptReq
+TS --> UC_RejectReq
+TS --> UC_DoneReq
+
+UC_AcceptReq ..> UC_ViewReq : <<include>>
+UC_RejectReq ..> UC_ViewReq : <<include>>
+UC_DoneReq   ..> UC_AcceptReq : <<include>>
+
+' ─────────────────────────────────────────
+'  STUDENT
+' ─────────────────────────────────────────
+rectangle "Student Panel" {
+  usecase "Register for Course\n(max 21 credits, max 3 fails)" as UC_RegisterCourse
+  usecase "View Marks"              as UC_ViewMarks
+  usecase "View Transcript"         as UC_ViewTranscript
+  usecase "Rate Teacher"            as UC_RateTeacher
+  usecase "Join Student Organization" as UC_JoinOrg
+  usecase "Be Head of Organization"   as UC_HeadOrg
+  usecase "Submit Tech Request"       as UC_SubmitReq
+}
+
+ST --> UC_RegisterCourse
+ST --> UC_ViewMarks
+ST --> UC_ViewTranscript
+ST --> UC_RateTeacher
+ST --> UC_JoinOrg
+ST --> UC_HeadOrg
+ST --> UC_SubmitReq
+
+note right of UC_SubmitReq
+  Request extends Message
+  (MessageType.REQUEST)
+end note
+
+UC_HeadOrg ..> UC_JoinOrg : <<extend>>
+
+' ─────────────────────────────────────────
+'  GRADUATE STUDENT
+' ─────────────────────────────────────────
+rectangle "Graduate Student Panel" {
+  usecase "Assign Research Supervisor\n(throws LowHIndexException if h<3)" as UC_Supervisor
+  usecase "Publish Diploma Paper"     as UC_DiplomaPublish
+}
+
+GS --> UC_Supervisor
+GS --> UC_DiplomaPublish
+
+' ─────────────────────────────────────────
+'  RESEARCHER ROLE
+'  (реализован через Decorator pattern:
+'   TeacherResearcher / StudentResearcher)
+' ─────────────────────────────────────────
+rectangle "Researcher Functions\n[Decorator Pattern]" {
+  usecase "Publish Research Paper\n(auto-generates News)" as UC_PublishPaper
+  usecase "Calculate H-Index"           as UC_HIndex
+  usecase "Lead Research Project"       as UC_LeadProject
+  usecase "Add Participant to Project\n(throws NotResearcherException)" as UC_AddParticipant
+  usecase "Print Papers Sorted\n(by date / citations / pages)" as UC_PrintPapers
+  usecase "Get Citation\n(PlainText / BibTeX)"  as UC_GetCitation
+}
+
+TCR --> UC_PublishPaper
+TCR --> UC_HIndex
+TCR --> UC_LeadProject
+TCR --> UC_AddParticipant
+TCR --> UC_PrintPapers
+TCR --> UC_GetCitation
+
+STR --> UC_PublishPaper
+STR --> UC_HIndex
+STR --> UC_LeadProject
+STR --> UC_AddParticipant
+STR --> UC_PrintPapers
+STR --> UC_GetCitation
+
+UC_PublishPaper ..> UC_Notify : <<extend>>\ntriggers notification
+
+@enduml
